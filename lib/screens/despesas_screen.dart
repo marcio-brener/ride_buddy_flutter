@@ -124,7 +124,7 @@ class _DespesasScreenState extends State<DespesasScreen> {
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    // Botão de fechar centralizado
+                    // Botão de fechar
                     Align(
                       alignment: Alignment.topCenter,
                       child: GestureDetector(
@@ -187,7 +187,7 @@ class _DespesasScreenState extends State<DespesasScreen> {
                     ),
                     SizedBox(height: 12),
 
-                    // Data da despesa
+                    // Data
                     GestureDetector(
                       onTap: () async {
                         final selectedDate = await showDatePicker(
@@ -247,7 +247,7 @@ class _DespesasScreenState extends State<DespesasScreen> {
                     ),
                     SizedBox(height: 12),
 
-                    // Observações (opcional)
+                    // Observações
                     TextField(
                       decoration: InputDecoration(
                         hintText: 'Observações (opcional)',
@@ -267,7 +267,7 @@ class _DespesasScreenState extends State<DespesasScreen> {
                     ),
                     SizedBox(height: 20),
 
-                    // Botões Cancelar e Adicionar
+                    // Botões
                     Row(
                       children: [
                         Expanded(
@@ -394,9 +394,23 @@ class _DespesasScreenState extends State<DespesasScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'Total: R\$ ${total.toStringAsFixed(2)}',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Total',
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                ),
+                Text(
+                  'R\$ ${total.toStringAsFixed(2)}',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+              ],
             ),
             ElevatedButton(
               onPressed: () => _addDespesa(context),

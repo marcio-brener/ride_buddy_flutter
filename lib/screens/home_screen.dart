@@ -39,7 +39,7 @@ class HomeScreen extends StatelessWidget {
     } else if (index == 1) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const ReceitasScreen()),
+        MaterialPageRoute(builder: (context) => ReceitasScreen()),
       );
     } else if (index == 2) {
       Navigator.push(

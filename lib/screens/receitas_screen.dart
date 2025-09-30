@@ -239,11 +239,12 @@ class _ReceitasScreenState extends State<ReceitasScreen> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         automaticallyImplyLeading: false,
+        toolbarHeight: 120,
         backgroundColor: const Color.fromARGB(255, 248, 151, 33),
         title: Row(
           children: [
             Padding(
-              padding: const EdgeInsets.only(left: 8),
+              padding: const EdgeInsets.only(left: 0, right: 0, bottom: 0),
               child: ElevatedButton.icon(
                 onPressed: () => Navigator.pop(context),
                 style: ElevatedButton.styleFrom(
@@ -266,10 +267,7 @@ class _ReceitasScreenState extends State<ReceitasScreen> {
               child: Center(
                 child: const Text(
                   'Receitas',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+                  style: TextStyle(fontSize: 32, color: Colors.white),
                 ),
               ),
             ),
@@ -311,19 +309,14 @@ class _ReceitasScreenState extends State<ReceitasScreen> {
             ),
             trailing: Text(
               'R\$ ${item['value'].toStringAsFixed(2)}',
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
           );
         },
       ),
       bottomNavigationBar: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border(
-            top: BorderSide(color: Colors.grey.shade300, width: 1),
-          ),
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 40),
+        decoration: BoxDecoration(color: Colors.white, border: Border()),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -333,12 +326,12 @@ class _ReceitasScreenState extends State<ReceitasScreen> {
               children: [
                 Text(
                   'Total',
-                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                  style: TextStyle(fontSize: 16, color: Colors.black),
                 ),
                 Text(
                   'R\$ ${total.toStringAsFixed(2)}',
                   style: const TextStyle(
-                    fontSize: 22,
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: Colors.black,
                   ),
@@ -353,8 +346,8 @@ class _ReceitasScreenState extends State<ReceitasScreen> {
                 ),
                 backgroundColor: const Color.fromARGB(255, 248, 151, 33),
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 40,
-                  vertical: 12,
+                  horizontal: 70,
+                  vertical: 16,
                 ),
               ),
               child: const Text(

@@ -359,11 +359,43 @@ class _DespesasScreenState extends State<DespesasScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text(
-          'Despesas',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+        automaticallyImplyLeading: false,
+        backgroundColor: const Color.fromARGB(255, 248, 151, 33),
+        title: Row(
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: ElevatedButton.icon(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  elevation: 2,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
+                ),
+                icon: const Icon(Icons.chevron_left, size: 20),
+                label: const Text('Voltar  ', style: TextStyle(fontSize: 14)),
+              ),
+            ),
+            Expanded(
+              child: Center(
+                child: const Text(
+                  'Despesas',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
-        backgroundColor: Color.fromARGB(255, 248, 151, 33),
       ),
       body: ListView.separated(
         padding: EdgeInsets.all(16),

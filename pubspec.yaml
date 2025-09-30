@@ -9,13 +9,13 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  google_fonts: 6.3.1
-  intl: ^0.18.1
+  google_fonts: 6.3.2
+  intl: ^0.20.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
 
 flutter:
   uses-material-design: true
@@ -25,3 +25,10 @@ flutter:
     - assets/capital.png
     - assets/revenue-growth.png
     - assets/relatorio-de-negocios.png
+    - assets/99-logo.png
+    - assets/ifood-logo.png
+    - assets/uber-logo.png
+    - assets/vrdrive-logo.png
+    - assets/rappi-logo.png
+    
+

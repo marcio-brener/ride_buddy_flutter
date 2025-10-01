@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ride_buddy_flutter/widgets/button_navigation.dart';
 import 'package:ride_buddy_flutter/widgets/header.dart';
-import 'package:ride_buddy_flutter/widgets/list_item.dart';
+import 'package:ride_buddy_flutter/widgets/receita_list_item.dart';
 
 class ReceitasScreen extends StatefulWidget {
   const ReceitasScreen({super.key});

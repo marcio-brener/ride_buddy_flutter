@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ride_buddy_flutter/widgets/button_navigation.dart';
 import 'package:ride_buddy_flutter/widgets/header.dart';
 
 class ReceitasScreen extends StatefulWidget {
@@ -96,7 +97,7 @@ class _ReceitasScreenState extends State<ReceitasScreen> {
   double get total =>
       _receitas.fold(0, (sum, item) => sum + (item['value'] as double));
 
-  void _addReceita() {
+  void _addReceita(BuildContext rootContext) {
     String? appSelecionado;
     String value = '';
     String distancia = '';
@@ -278,49 +279,9 @@ class _ReceitasScreenState extends State<ReceitasScreen> {
           );
         },
       ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 40),
-        decoration: BoxDecoration(color: Colors.white, border: Border()),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Total',
-                  style: TextStyle(fontSize: 16, color: Colors.black),
-                ),
-                Text(
-                  'R\$ ${total.toStringAsFixed(2)}',
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-              ],
-            ),
-            ElevatedButton(
-              onPressed: _addReceita,
-              style: ElevatedButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                backgroundColor: const Color.fromARGB(255, 248, 151, 33),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 70,
-                  vertical: 16,
-                ),
-              ),
-              child: const Text(
-                'Adicionar',
-                style: TextStyle(fontSize: 16, color: Colors.white),
-              ),
-            ),
-          ],
-        ),
+      bottomNavigationBar: ButtonNavigation(
+        total: total,
+        callback: _addReceita,
       ),
     );
   }

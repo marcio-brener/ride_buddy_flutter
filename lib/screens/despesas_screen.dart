@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:ride_buddy_flutter/widgets/button_navigation.dart';
 import 'package:ride_buddy_flutter/widgets/header.dart';
 
 class DespesasScreen extends StatefulWidget {
@@ -378,51 +379,9 @@ class _DespesasScreenState extends State<DespesasScreen> {
           );
         },
       ),
-      bottomNavigationBar: Container(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border(
-            top: BorderSide(color: Colors.grey.shade300, width: 1),
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Total',
-                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                ),
-                Text(
-                  'R\$ ${total.toStringAsFixed(2)}',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-              ],
-            ),
-            ElevatedButton(
-              onPressed: () => _addDespesa(context),
-              style: ElevatedButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                backgroundColor: Color.fromARGB(255, 248, 151, 33),
-                padding: EdgeInsets.symmetric(horizontal: 55, vertical: 12),
-              ),
-              child: Text(
-                'Adicionar',
-                style: TextStyle(fontSize: 16, color: Colors.white),
-              ),
-            ),
-          ],
-        ),
+      bottomNavigationBar: ButtonNavigation(
+        total: total,
+        callback: _addDespesa,
       ),
     );
   }

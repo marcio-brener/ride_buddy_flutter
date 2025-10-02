@@ -3,30 +3,28 @@ import 'package:ride_buddy_flutter/screens/login_screen.dart';
 import 'despesas_screen.dart';
 import 'receitas_screen.dart';
 import 'relatorios_screen.dart';
+import 'package:ride_buddy_flutter/models/menu_item.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
-  // Lista de itens do menu
-  final List<Map<String, String>> items = const [
-    {
-      "title": "Despesas",
-      "subtitle":
-          "Gerencie e registre seus gastos para manter o controle financeiro.",
-      "image": "assets/capital.png",
-    },
-    {
-      "title": "Receitas",
-      "subtitle":
-          "Acompanhe suas receitas e mantenha o equilíbrio das suas finanças.",
-      "image": "assets/revenue-growth.png",
-    },
-    {
-      "title": "Relatórios",
-      "subtitle":
-          "Visualize análises detalhadas para entender melhor sua situação financeira.",
-      "image": "assets/relatorio-de-negocios.png",
-    },
+  // Lista de itens do menu usando o model MenuItem
+  final List<MenuItem> items = const [
+    MenuItem(
+      title: "Despesas",
+      subtitle: "Gerencie e registre seus gastos para manter o controle financeiro.",
+      image: "assets/capital.png",
+    ),
+    MenuItem(
+      title: "Receitas",
+      subtitle: "Acompanhe suas receitas e mantenha o equilíbrio das suas finanças.",
+      image: "assets/revenue-growth.png",
+    ),
+    MenuItem(
+      title: "Relatórios",
+      subtitle: "Visualize análises detalhadas para entender melhor sua situação financeira.",
+      image: "assets/relatorio-de-negocios.png",
+    ),
   ];
 
   // Método para navegar para a página correta
@@ -76,7 +74,7 @@ class HomeScreen extends StatelessWidget {
               color: const Color.fromARGB(255, 248, 151, 33),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                children: const [
                   SizedBox(height: 20),
                   Text(
                     "Menu",
@@ -105,7 +103,6 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
       ),
-
       body: ListView.separated(
         padding: const EdgeInsets.all(16),
         itemCount: items.length,
@@ -115,13 +112,12 @@ class HomeScreen extends StatelessWidget {
           final item = items[index];
           return ListTile(
             contentPadding: const EdgeInsets.symmetric(vertical: 8),
-            leading: Image.asset(item["image"]!, width: 50, height: 50),
+            leading: Image.asset(item.image, width: 50, height: 50),
             title: Text(
-              item["title"]!,
+              item.title,
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
-            subtitle: Text(item["subtitle"]!),
-            trailing: null,
+            subtitle: Text(item.subtitle),
             onTap: () => _navigateToPage(context, index),
           );
         },

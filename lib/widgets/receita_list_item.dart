@@ -41,7 +41,11 @@ class ReceitaListItem extends StatelessWidget {
       ),
       trailing: Text(
         'R\$ ${item['value'].toStringAsFixed(2)}',
-        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 16,
+          color: Color(0xFF27214D),
+        ),
       ),
     );
   }

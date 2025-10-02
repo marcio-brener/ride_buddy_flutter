@@ -13,7 +13,7 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Ride Buddy',
-      theme: ThemeData(textTheme: GoogleFonts.cabinTextTheme()),
+      theme: ThemeData(textTheme: GoogleFonts.firaSansTextTheme()),
       home: LoginScreen(),
     );
   }

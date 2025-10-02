@@ -91,37 +91,19 @@ class _ReceitasScreenState extends State<ReceitasScreen> {
       _receitas.fold(0, (sum, item) => sum + (item['value'] as double));
 
   void _addReceita(BuildContext rootContext) {
-    String? appSelecionado;
-    String value = '';
-    String distancia = '';
-    String localSaida = '';
-    String localEntrada = '';
-    DateTime? dataHora;
-
-    final List<String> _apps = [
-      "Uber",
-      "99",
-      "iFood",
-      "Frete",
-      "Rappi",
-      "InDrive",
-      "VRDrive",
-    ];
-
-    showDialog(
+    showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setStateDialog) {
-            return ReceitaDialog(
-              apps: _apps,
-              onAdd: (receita) {
-                setState(() {
-                  _receitas.add(receita);
-                });
-              },
-            );
+        return ReceitaModal(
+          apps: ["Uber", "99", "iFood", "Frete", "Rappi", "InDrive", "VRDrive"],
+          onAdd: (data) {
+            setState(() {
+              _receitas.add(data);
+            });
           },
+          rootContext: context,
         );
       },
     );

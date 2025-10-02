@@ -45,7 +45,7 @@ class _DespesasModal extends State<DespesasModal> {
         color: Colors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       child: SingleChildScrollView(
         child: Column(
           children: [

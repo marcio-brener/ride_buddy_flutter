@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:ride_buddy_flutter/widgets/button_navigation.dart';
 import 'package:ride_buddy_flutter/widgets/despesa_list_item.dart';
 import 'package:ride_buddy_flutter/widgets/despesas_modal.dart';

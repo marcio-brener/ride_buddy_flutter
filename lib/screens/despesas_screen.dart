@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:ride_buddy_flutter/widgets/button_navigation.dart';
 import 'package:ride_buddy_flutter/widgets/despesa_list_item.dart';
+import 'package:ride_buddy_flutter/widgets/despesas_modal.dart';
 import 'package:ride_buddy_flutter/widgets/header.dart';
 
 class DespesasScreen extends StatefulWidget {
@@ -88,28 +89,7 @@ class _DespesasScreenState extends State<DespesasScreen> {
   double get total =>
       _despesas.fold(0, (sum, item) => sum + (item['valor'] as double));
 
-  final List<String> categorias = [
-    'Combustível',
-    'Manutenção',
-    'Estacionamento',
-    'Alimentação',
-    'Outros',
-  ];
-
-  final List<String> formasPagamento = [
-    'Dinheiro',
-    'Cartão de débito',
-    'Cartão de crédito',
-    'Pix',
-  ];
-
   void _addDespesa(BuildContext rootContext) {
-    String? categoria;
-    String valor = '';
-    DateTime? data;
-    String? formaPagamento;
-    String observacoes = '';
-
     showModalBottomSheet(
       context: rootContext,
       isScrollControlled: true,
@@ -117,239 +97,13 @@ class _DespesasScreenState extends State<DespesasScreen> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setStateSheet) {
-            return Container(
-              height: MediaQuery.of(rootContext).size.height * 0.6,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-              ),
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    // Botão de fechar
-                    Align(
-                      alignment: Alignment.topCenter,
-                      child: GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade200,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(Icons.close, color: Colors.black),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 16),
-
-                    // Categoria
-                    DropdownButtonFormField<String>(
-                      value: categoria,
-                      decoration: InputDecoration(
-                        hintText: 'Categoria',
-                        filled: true,
-                        fillColor: Colors.grey.shade100,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                      items: categorias
-                          .map(
-                            (c) => DropdownMenuItem(value: c, child: Text(c)),
-                          )
-                          .toList(),
-                      onChanged: (val) {
-                        setStateSheet(() {
-                          categoria = val;
-                        });
-                      },
-                    ),
-                    SizedBox(height: 12),
-
-                    // Valor
-                    TextField(
-                      decoration: InputDecoration(
-                        hintText: 'Valor',
-                        filled: true,
-                        fillColor: Colors.grey.shade100,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                      keyboardType: TextInputType.number,
-                      onChanged: (val) {
-                        setStateSheet(() {
-                          valor = val;
-                        });
-                      },
-                    ),
-                    SizedBox(height: 12),
-
-                    // Data
-                    GestureDetector(
-                      onTap: () async {
-                        final selectedDate = await showDatePicker(
-                          context: rootContext,
-                          initialDate: DateTime.now(),
-                          firstDate: DateTime(2020),
-                          lastDate: DateTime(2100),
-                        );
-                        if (selectedDate != null) {
-                          setStateSheet(() {
-                            data = selectedDate;
-                          });
-                        }
-                      },
-                      child: Container(
-                        height: 50,
-                        padding: EdgeInsets.symmetric(horizontal: 12),
-                        alignment: Alignment.centerLeft,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          data != null
-                              ? DateFormat('dd/MM/yyyy').format(data!)
-                              : 'Data da despesa',
-                          style: TextStyle(
-                            color: data != null ? Colors.black : Colors.grey,
-                          ),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 12),
-
-                    // Forma de pagamento
-                    DropdownButtonFormField<String>(
-                      value: formaPagamento,
-                      decoration: InputDecoration(
-                        hintText: 'Forma de pagamento',
-                        filled: true,
-                        fillColor: Colors.grey.shade100,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                      items: formasPagamento
-                          .map(
-                            (f) => DropdownMenuItem(value: f, child: Text(f)),
-                          )
-                          .toList(),
-                      onChanged: (val) {
-                        setStateSheet(() {
-                          formaPagamento = val;
-                        });
-                      },
-                    ),
-                    SizedBox(height: 12),
-
-                    // Observações
-                    TextField(
-                      decoration: InputDecoration(
-                        hintText: 'Observações (opcional)',
-                        filled: true,
-                        fillColor: Colors.grey.shade100,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                      maxLines: 3,
-                      onChanged: (val) {
-                        setStateSheet(() {
-                          observacoes = val;
-                        });
-                      },
-                    ),
-                    SizedBox(height: 20),
-
-                    // Botões
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => Navigator.pop(context),
-                            style: OutlinedButton.styleFrom(
-                              side: BorderSide(
-                                color: Color.fromARGB(255, 248, 151, 33),
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              padding: EdgeInsets.symmetric(vertical: 14),
-                            ),
-                            child: Text(
-                              'Cancelar',
-                              style: TextStyle(
-                                color: Color.fromARGB(255, 248, 151, 33),
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () {
-                              double? valorDouble = double.tryParse(valor);
-                              if (categoria == null ||
-                                  valor.isEmpty ||
-                                  valorDouble == null ||
-                                  valorDouble <= 0 ||
-                                  data == null ||
-                                  formaPagamento == null) {
-                                Navigator.pop(context);
-                                ScaffoldMessenger.of(rootContext).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      'Por favor, preencha todos os campos obrigatórios.',
-                                    ),
-                                    duration: Duration(seconds: 2),
-                                  ),
-                                );
-                                return;
-                              }
-
-                              setState(() {
-                                _despesas.add({
-                                  'categoria': categoria,
-                                  'valor': valorDouble,
-                                  'data': data,
-                                  'formaPagamento': formaPagamento,
-                                  'observacoes': observacoes,
-                                });
-                              });
-                              Navigator.pop(context);
-                            },
-                            style: ElevatedButton.styleFrom(
-                              shape: RoundedRectangleBorder(
-                                side: BorderSide(
-                                  color: Color.fromARGB(255, 248, 151, 33),
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              backgroundColor: Colors.white,
-                              padding: EdgeInsets.symmetric(vertical: 14),
-                            ),
-                            child: Text(
-                              'Adicionar',
-                              style: TextStyle(
-                                color: Color.fromARGB(255, 248, 151, 33),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+            return DespesasModal(
+              rootContext: rootContext,
+              onAdd: (despesa) {
+                setState(() {
+                  _despesas.add(despesa);
+                });
+              },
             );
           },
         );

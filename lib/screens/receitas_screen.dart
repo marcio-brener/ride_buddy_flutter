@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ride_buddy_flutter/widgets/button_navigation.dart';
 import 'package:ride_buddy_flutter/widgets/header.dart';
 import 'package:ride_buddy_flutter/widgets/receita_list_item.dart';
+import 'package:ride_buddy_flutter/widgets/receita_modal.dart';
 
 class ReceitasScreen extends StatefulWidget {
   const ReceitasScreen({super.key});
@@ -112,114 +113,13 @@ class _ReceitasScreenState extends State<ReceitasScreen> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
-            return AlertDialog(
-              title: const Text('Adicionar Receita'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(
-                        labelText: "Aplicativo",
-                      ),
-                      value: appSelecionado,
-                      items: _apps.map((app) {
-                        return DropdownMenuItem(value: app, child: Text(app));
-                      }).toList(),
-                      onChanged: (val) {
-                        setStateDialog(() {
-                          appSelecionado = val;
-                        });
-                      },
-                    ),
-                    TextField(
-                      decoration: const InputDecoration(hintText: 'Valor'),
-                      keyboardType: TextInputType.number,
-                      onChanged: (val) => value = val,
-                    ),
-                    TextField(
-                      decoration: const InputDecoration(
-                        hintText: 'Distância (km)',
-                      ),
-                      keyboardType: TextInputType.number,
-                      onChanged: (val) => distancia = val,
-                    ),
-                    TextField(
-                      decoration: const InputDecoration(
-                        hintText: 'Local de saída',
-                      ),
-                      onChanged: (val) => localSaida = val,
-                    ),
-                    TextField(
-                      decoration: const InputDecoration(
-                        hintText: 'Local de chegada',
-                      ),
-                      onChanged: (val) => localEntrada = val,
-                    ),
-                    const SizedBox(height: 8),
-                    TextButton(
-                      onPressed: () async {
-                        final DateTime? pickedDate = await showDatePicker(
-                          context: context,
-                          initialDate: DateTime.now(),
-                          firstDate: DateTime(2020),
-                          lastDate: DateTime(2100),
-                        );
-                        if (pickedDate != null) {
-                          final TimeOfDay? pickedTime = await showTimePicker(
-                            context: context,
-                            initialTime: TimeOfDay.now(),
-                          );
-                          if (pickedTime != null) {
-                            setStateDialog(() {
-                              dataHora = DateTime(
-                                pickedDate.year,
-                                pickedDate.month,
-                                pickedDate.day,
-                                pickedTime.hour,
-                                pickedTime.minute,
-                              );
-                            });
-                          }
-                        }
-                      },
-                      child: Text(
-                        dataHora == null
-                            ? 'Selecionar Data e Hora'
-                            : '${dataHora!.day}/${dataHora!.month}/${dataHora!.year} ${dataHora!.hour.toString().padLeft(2, '0')}:${dataHora!.minute.toString().padLeft(2, '0')}',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancelar'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    if (appSelecionado != null &&
-                        value.isNotEmpty &&
-                        distancia.isNotEmpty &&
-                        localSaida.isNotEmpty &&
-                        localEntrada.isNotEmpty) {
-                      setState(() {
-                        _receitas.add({
-                          'app': appSelecionado,
-                          'value': double.tryParse(value) ?? 0,
-                          'distancia': double.tryParse(distancia) ?? 0,
-                          'localSaida': localSaida,
-                          'localEntrada': localEntrada,
-                          'dataHora': dataHora ?? DateTime.now(),
-                        });
-                      });
-                      Navigator.pop(context);
-                    }
-                  },
-                  child: const Text('Adicionar'),
-                ),
-              ],
+            return ReceitaDialog(
+              apps: _apps,
+              onAdd: (receita) {
+                setState(() {
+                  _receitas.add(receita);
+                });
+              },
             );
           },
         );

@@ -14,7 +14,7 @@ class ReceitasScreen extends StatefulWidget {
 }
 
 class _ReceitasScreenState extends State<ReceitasScreen> {
-  final List<Receita> _receitas = [
+  final List<Receita> _receitas = [ 
     Receita(
       app: "Uber",
       value: 45.50,
@@ -89,312 +89,95 @@ class _ReceitasScreenState extends State<ReceitasScreen> {
     ),
   ];
 
-  final Map<String, String> appLogos = {
-    "Uber": "assets/uber-logo.png",
-    "99": "assets/99-logo.png",
-    "99Pop": "assets/99-logo.png",
-    "iFood": "assets/ifood-logo.png",
-    "Rappi": "assets/rappi-logo.png",
-    "VRDrive": "assets/vrdrive-logo.png",
-  };
+  double get total => _receitas.fold(0, (sum, receita) => sum + receita.value);
 
-  double get total =>
-   _receitas.fold(0, (sum, receita) => sum + receita.value);
+  void _openReceitaModal({Receita? receita, int? index}) {
+    final List<String> apps = [ "Uber", "99", "iFood", "Frete", "Rappi", "InDrive", "VRDrive" ];
 
-  void _addReceita(BuildContext rootContext) {
-    String? appSelecionado;
-    String value = '';
-    String distancia = '';
-    String localSaida = '';
-    String localEntrada = '';
-    DateTime? dataHora;
-
-    final List<String> apps = [
-      "Uber",
-      "99",
-      "iFood",
-      "Frete",
-      "Rappi",
-      "InDrive",
-      "VRDrive",
-    ];
-
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setStateDialog) {
-            return AlertDialog(
-              title: const Text('Adicionar Receita'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(
-                        labelText: "Aplicativo",
-                      ),
-                      initialValue: appSelecionado,
-                      items: apps.map((app) {
-                        return DropdownMenuItem(value: app, child: Text(app));
-                      }).toList(),
-                      onChanged: (val) {
-                        setStateDialog(() {
-                          appSelecionado = val;
-                        });
-                      },
-                    ),
-                    TextField(
-                      decoration: const InputDecoration(hintText: 'Valor'),
-                      keyboardType: TextInputType.number,
-                      onChanged: (val) => value = val,
-                    ),
-                    TextField(
-                      decoration: const InputDecoration(
-                        hintText: 'Distância (km)',
-                      ),
-                      keyboardType: TextInputType.number,
-                      onChanged: (val) => distancia = val,
-                    ),
-                    TextField(
-                      decoration: const InputDecoration(
-                        hintText: 'Local de saída',
-                      ),
-                      onChanged: (val) => localSaida = val,
-                    ),
-                    TextField(
-                      decoration: const InputDecoration(
-                        hintText: 'Local de chegada',
-                      ),
-                      onChanged: (val) => localEntrada = val,
-                    ),
-                    const SizedBox(height: 8),
-                    TextButton(
-                      onPressed: () async {
-                        final DateTime? pickedDate = await showDatePicker(
-                          context: context,
-                          initialDate: DateTime.now(),
-                          firstDate: DateTime(2020),
-                          lastDate: DateTime(2100),
-                        );
-                        if (pickedDate != null) {
-                          final TimeOfDay? pickedTime = await showTimePicker(
-                            context: context,
-                            initialTime: TimeOfDay.now(),
-                          );
-                          if (pickedTime != null) {
-                            setStateDialog(() {
-                              dataHora = DateTime(
-                                pickedDate.year,
-                                pickedDate.month,
-                                pickedDate.day,
-                                pickedTime.hour,
-                                pickedTime.minute,
-                              );
-                            });
-                          }
-                        }
-                      },
-                      child: Text(
-                        dataHora == null
-                            ? 'Selecionar Data e Hora'
-                            : '${dataHora!.day}/${dataHora!.month}/${dataHora!.year} ${dataHora!.hour.toString().padLeft(2, '0')}:${dataHora!.minute.toString().padLeft(2, '0')}',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancelar'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    if (appSelecionado != null &&
-                        value.isNotEmpty &&
-                        distancia.isNotEmpty &&
-                        localSaida.isNotEmpty &&
-                        localEntrada.isNotEmpty) {
-                      setState(() {
-                        final novaReceita = Receita(
-                          app: appSelecionado!,
-                          value: double.tryParse(value) ?? 0,
-                          distancia: double.tryParse(distancia) ?? 0,
-                          localSaida: localSaida,
-                          localEntrada: localEntrada,
-                          dataHora: dataHora ?? DateTime.now(),
-                        );
-                         _receitas.add(novaReceita);
-                        DataRepository().receitas.add(novaReceita);
-                      });
-                      Navigator.pop(context);
-                    }
-                  },
-                  child: const Text('Adicionar'),
-                ),
-              ],
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return ReceitaModal(
+          apps: apps,
+          rootContext: context,
+          receitaToEdit: receita,
+          onSave: (data) {
+            final novaReceita = Receita(
+              app: data['app'] as String,
+              value: data['value'] as double,
+              distancia: data['distancia'] as double,
+              localSaida: data['localSaida'] as String,
+              localEntrada: data['localEntrada'] as String,
+              dataHora: data['dataHora'] as DateTime,
             );
+            
+            setState(() {
+              if (index != null) {
+                _receitas[index] = novaReceita;
+              } else {
+                _receitas.add(novaReceita);
+                DataRepository().receitas.add(novaReceita);
+              }
+            });
           },
         );
       },
     );
   }
 
-  //função para editar receita
-  void _editReceita(int index) {
-    Receita receita = _receitas[index];
+  // SUBSTITUA A FUNÇÃO ANTIGA POR ESTA
 
-    String? appSelecionado = receita.app;
-    String value = receita.value.toString();
-    String distancia = receita.distancia.toString();
-    String localSaida = receita.localSaida;
-    String localEntrada = receita.localEntrada;
-    DateTime? dataHora = receita.dataHora;
-
-    final List<String> apps = [
-      "Uber", "99", "iFood", "Frete", "Rappi", "InDrive", "VRDrive",
-    ];
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setStateDialog) {
-            return AlertDialog(
-              title: const Text('Editar Receita'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(labelText: "Aplicativo"),
-                      value: appSelecionado,
-                      items: apps.map((app) => DropdownMenuItem(
-                        value: app, child: Text(app),
-                      )).toList(),
-                      onChanged: (val) {
-                        setStateDialog(() {
-                          appSelecionado = val;
-                        });
-                      },
-                    ),
-                    TextField(
-                      decoration: const InputDecoration(hintText: 'Valor'),
-                      keyboardType: TextInputType.number,
-                      controller: TextEditingController(text: value),
-                      onChanged: (val) => value = val,
-                    ),
-                    TextField(
-                      decoration: const InputDecoration(hintText: 'Distância (km)'),
-                      keyboardType: TextInputType.number,
-                      controller: TextEditingController(text: distancia),
-                      onChanged: (val) => distancia = val,
-                    ),
-                    TextField(
-                      decoration: const InputDecoration(hintText: 'Local de saída'),
-                      controller: TextEditingController(text: localSaida),
-                      onChanged: (val) => localSaida = val,
-                    ),
-                    TextField(
-                      decoration: const InputDecoration(hintText: 'Local de chegada'),
-                      controller: TextEditingController(text: localEntrada),
-                      onChanged: (val) => localEntrada = val,
-                    ),
-                    const SizedBox(height: 8),
-                    TextButton(
-                      onPressed: () async {
-                        final DateTime? pickedDate = await showDatePicker(
-                          context: context,
-                          initialDate: dataHora ?? DateTime.now(),
-                          firstDate: DateTime(2020),
-                          lastDate: DateTime(2100),
-                        );
-                        if (pickedDate != null) {
-                          final TimeOfDay? pickedTime = await showTimePicker(
-                            context: context,
-                            initialTime: TimeOfDay.now(),
-                          );
-                          if (pickedTime != null) {
-                            setStateDialog(() {
-                              dataHora = DateTime(
-                                pickedDate.year,
-                                pickedDate.month,
-                                pickedDate.day,
-                                pickedTime.hour,
-                                pickedTime.minute,
-                              );
-                            });
-                          }
-                        }
-                      },
-                      child: Text(
-                        dataHora == null
-                            ? 'Selecionar Data e Hora'
-                            : '${dataHora!.day}/${dataHora!.month}/${dataHora!.year} ${dataHora!.hour.toString().padLeft(2, '0')}:${dataHora!.minute.toString().padLeft(2, '0')}',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancelar'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    if (appSelecionado != null &&
-                        value.isNotEmpty &&
-                        distancia.isNotEmpty &&
-                        localSaida.isNotEmpty &&
-                        localEntrada.isNotEmpty) {
-                      setState(() {
-                        _receitas[index] = Receita(
-                          app: appSelecionado!,
-                          value: double.tryParse(value) ?? 0,
-                          distancia: double.tryParse(distancia) ?? 0,
-                          localSaida: localSaida,
-                          localEntrada: localEntrada,
-                          dataHora: dataHora ?? DateTime.now(),
-                        );
-                      });
-                      Navigator.pop(context);
-                    }
-                  },
-                  child: const Text('Salvar'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  //função para excluir receita
   void _deleteReceita(int index) {
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (BuildContext dialogContext) { // Usar um nome diferente para o context do dialog
         return AlertDialog(
-          title: const Text('Excluir Receita'),
-          content: const Text('Tem certeza que deseja excluir esta receita?'),
+          // 1. Bordas arredondadas para combinar com o design do app
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16.0),
+          ),
+          
+          // 2. Título em negrito para melhor hierarquia visual
+          title: const Text(
+            'Excluir Receita',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          
+          // 3. Conteúdo com uma mensagem mais clara
+          content: const Text('Tem certeza que deseja excluir esta receita? Esta ação não pode ser desfeita.'),
+          
           actions: [
+            // 4. Botão "Cancelar" com estilo sutil
             TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar'),
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(
+                'Cancelar',
+                style: TextStyle(color: Colors.grey.shade700),
+              ),
             ),
+            
+            // 5. Botão "Excluir" com estilo de AÇÃO DESTRUTIVA
             ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red, // Cor vermelha para indicar perigo
+                foregroundColor: Colors.white, // Texto branco para contraste
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12.0),
+                ),
+              ),
               onPressed: () {
                 setState(() {
                   _receitas.removeAt(index);
                 });
-                Navigator.pop(context);
+                Navigator.pop(dialogContext); // Fecha o dialog
               },
               child: const Text('Excluir'),
             ),
           ],
+          // 6. Espaçamento adicional para os botões
+          actionsPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
         );
       },
     );
@@ -408,64 +191,19 @@ class _ReceitasScreenState extends State<ReceitasScreen> {
       body: ListView.separated(
         padding: const EdgeInsets.all(16),
         itemCount: _receitas.length,
-        separatorBuilder: (context, index) =>
-            Divider(thickness: 1, color: Colors.grey.shade300),
+        separatorBuilder: (context, index) => Divider(thickness: 1, color: Colors.grey.shade300),
         itemBuilder: (context, index) {
           final Receita receita = _receitas[index];
-          // Correção: se dataHora for null, usa DateTime.now()
-          final DateTime dataHora = receita.dataHora;
-
-          return ListTile(
-          contentPadding: const EdgeInsets.symmetric(vertical: 8),
-          leading: appLogos[receita.app] != null
-              ? Image.asset(appLogos[receita.app]!, width: 40, height: 40)
-              : null,
-          title: Text(
-            receita.app,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text("${receita.localSaida} → ${receita.localEntrada}"),
-              const SizedBox(height: 4),
-              Text("Distância: ${receita.distancia} km"),
-              const SizedBox(height: 2),
-              Text(
-                "Data/Hora: ${receita.dataHora.day}/${receita.dataHora.month}/${receita.dataHora.year} ${receita.dataHora.hour.toString().padLeft(2, '0')}:${receita.dataHora.minute.toString().padLeft(2, '0')}",
-                style: TextStyle(fontSize: 12, color: Colors.grey[700]),
-              ),
-            ],
-          ),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'R\$ ${receita.value.toStringAsFixed(2)}',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert),
-                onSelected: (value) {
-                  if (value == 'Editar') {
-                    _editReceita(index);
-                  } else if (value == 'Excluir') {
-                    _deleteReceita(index);
-                  }
-                },
-                itemBuilder: (context) => const [
-                  PopupMenuItem(value: 'Editar', child: Text('Editar')),
-                  PopupMenuItem(value: 'Excluir', child: Text('Excluir')),
-                ],
-              ),
-            ],
-          ),
-        );
+          return ReceitaListItem(
+            receita: receita,
+            onEdit: () => _openReceitaModal(receita: receita, index: index),
+            onDelete: () => _deleteReceita(index),
+          );
         },
       ),
       bottomNavigationBar: ButtonNavigation(
         total: total,
-        callback: _addReceita,
+        callback: (ctx) => _openReceitaModal(),
       ),
     );
   }

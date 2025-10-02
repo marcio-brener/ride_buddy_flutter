@@ -39,7 +39,7 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
           Expanded(
             child: Center(
               child: Text(
-                text, // Agora o título vem da propriedade
+                text,
                 style: const TextStyle(fontSize: 32, color: Colors.white),
               ),
             ),

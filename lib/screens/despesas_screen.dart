@@ -1,5 +1,6 @@
+// lib/screens/despesas_screen.dart
+
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:ride_buddy_flutter/widgets/button_navigation.dart';
 import 'package:ride_buddy_flutter/widgets/despesa_list_item.dart';
 import 'package:ride_buddy_flutter/widgets/despesas_modal.dart';
@@ -90,266 +91,85 @@ class _DespesasScreenState extends State<DespesasScreen> {
 
   double get total => _despesas.fold(0, (sum, item) => sum + item.valor);
 
-  final List<String> categorias = [
-    'Combustível',
-    'Manutenção',
-    'Estacionamento',
-    'Alimentação',
-    'Outros',
-  ];
-
-  final List<String> formasPagamento = [
-    'Dinheiro',
-    'Cartão de débito',
-    'Cartão de crédito',
-    'Pix',
-  ];
-
-  void _addDespesa(BuildContext rootContext) {
-    String valor = '';
-    String? categoria;
-    DateTime? data;
-    String? formaPagamento;
-    String observacoes = '';
-
+  void _openDespesaModal({Despesa? despesa, int? index}) {
     showModalBottomSheet(
-      context: rootContext,
+      context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setStateSheet) {
-            return Container(
-              height: MediaQuery.of(rootContext).size.height * 0.6,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    // Botão de fechar
-                    Align(
-                      alignment: Alignment.topCenter,
-                      child: GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade200,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.close, color: Colors.black),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Categoria
-                    DropdownButtonFormField<String>(
-                      value: categoria,
-                      decoration: InputDecoration(
-                        hintText: 'Categoria',
-                        filled: true,
-                        fillColor: Colors.grey.shade100,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                      items: categorias
-                          .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                          .toList(),
-                      onChanged: (val) {
-                        setStateSheet(() {
-                          categoria = val;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Valor
-                    TextField(
-                      decoration: InputDecoration(
-                        hintText: 'Valor',
-                        filled: true,
-                        fillColor: Colors.grey.shade100,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                      keyboardType: TextInputType.number,
-                      onChanged: (val) {
-                        setStateSheet(() {
-                          valor = val;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Data
-                    GestureDetector(
-                      onTap: () async {
-                        final selectedDate = await showDatePicker(
-                          context: rootContext,
-                          initialDate: DateTime.now(),
-                          firstDate: DateTime(2020),
-                          lastDate: DateTime(2100),
-                        );
-                        if (selectedDate != null) {
-                          setStateSheet(() {
-                            data = selectedDate;
-                          });
-                        }
-                      },
-                      child: Container(
-                        height: 50,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        alignment: Alignment.centerLeft,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          data != null
-                              ? DateFormat('dd/MM/yyyy').format(data!)
-                              : 'Data da despesa',
-                          style: TextStyle(
-                            color: data != null ? Colors.black : Colors.grey,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Forma de pagamento
-                    DropdownButtonFormField<String>(
-                      value: formaPagamento,
-                      decoration: InputDecoration(
-                        hintText: 'Forma de pagamento',
-                        filled: true,
-                        fillColor: Colors.grey.shade100,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                      items: formasPagamento
-                          .map((f) => DropdownMenuItem(value: f, child: Text(f)))
-                          .toList(),
-                      onChanged: (val) {
-                        setStateSheet(() {
-                          formaPagamento = val;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Observações
-                    TextField(
-                      decoration: InputDecoration(
-                        hintText: 'Observações (opcional)',
-                        filled: true,
-                        fillColor: Colors.grey.shade100,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                      maxLines: 3,
-                      onChanged: (val) {
-                        setStateSheet(() {
-                          observacoes = val;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Botões
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => Navigator.pop(context),
-                            style: OutlinedButton.styleFrom(
-                              side: const BorderSide(
-                                  color: Color.fromARGB(255, 248, 151, 33)),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                            ),
-                            child: const Text(
-                              'Cancelar',
-                              style:
-                                  TextStyle(color: Color.fromARGB(255, 248, 151, 33)),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () {
-                              double? valorDouble = double.tryParse(valor);
-                              if (categoria == null ||
-                                  valor.isEmpty ||
-                                  valorDouble == null ||
-                                  valorDouble <= 0 ||
-                                  data == null ||
-                                  formaPagamento == null) {
-                                Navigator.pop(context);
-                                ScaffoldMessenger.of(rootContext).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                        'Por favor, preencha todos os campos obrigatórios.'),
-                                    duration: Duration(seconds: 2),
-                                  ),
-                                );
-                                return;
-                              }
-
-                              setState(() {
-                                _despesas.add(Despesa(
-                                  categoria: categoria!,
-                                  valor: valorDouble,
-                                  data: data!,
-                                  formaPagamento: formaPagamento!,
-                                  observacoes: observacoes,
-                                ));
-                              });
-                              Navigator.pop(context);
-                            },
-                            style: ElevatedButton.styleFrom(
-                              shape: RoundedRectangleBorder(
-                                side: const BorderSide(
-                                  color: Color.fromARGB(255, 248, 151, 33),
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              backgroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                            ),
-                            child: const Text(
-                              'Adicionar',
-                              style:
-                                  TextStyle(color: Color.fromARGB(255, 248, 151, 33)),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+        return DespesasModal(
+          rootContext: context,
+          despesaToEdit: despesa,
+          onSave: (data) {
+            final novaDespesa = Despesa(
+              categoria: data['categoria'],
+              valor: data['valor'],
+              data: data['data'],
+              formaPagamento: data['formaPagamento'],
+              observacoes: data['observacoes'],
             );
+
+            setState(() {
+              if (index != null) {
+                _despesas[index] = novaDespesa;
+              } else {
+                _despesas.add(novaDespesa);
+                DataRepository().despesas.add(novaDespesa);
+              }
+            });
           },
         );
       },
     );
   }
+
+  void _deleteDespesa(int index) {
+  showDialog(
+    context: context,
+    builder: (BuildContext dialogContext) {
+      return AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.0),
+        ),
+        
+        title: const Text(
+          'Excluir Despesa',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        
+        content: const Text('Tem certeza que deseja excluir esta despesa? Esta ação não pode ser desfeita.'),
+        
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(
+              'Cancelar',
+              style: TextStyle(color: Colors.grey.shade700),
+            ),
+          ),
+          
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red, 
+              foregroundColor: Colors.white, 
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12.0),
+              ),
+            ),
+            onPressed: () {
+              setState(() {
+                _despesas.removeAt(index);
+              });
+              Navigator.pop(dialogContext);
+            },
+            child: const Text('Excluir'),
+          ),
+        ],
+        actionsPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      );
+    },
+  );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -362,21 +182,17 @@ class _DespesasScreenState extends State<DespesasScreen> {
         separatorBuilder: (context, index) =>
             Divider(thickness: 1, color: Colors.grey.shade300),
         itemBuilder: (context, index) {
-          final item = _despesas[index];
-          return ListTile(
-            contentPadding: const EdgeInsets.symmetric(vertical: 8),
-            title: Text(item.categoria),
-            subtitle: Text(
-              'Data: ${DateFormat('dd/MM/yyyy').format(item.data)}\n'
-              'Forma: ${item.formaPagamento}${item.observacoes.isNotEmpty ? "\nObs: ${item.observacoes}" : ""}',
-            ),
-            trailing: Text('R\$ ${item.valor.toStringAsFixed(2)}'),
+          final despesa = _despesas[index];
+          return DespesaListItem(
+            despesa: despesa,
+            onEdit: () => _openDespesaModal(despesa: despesa, index: index),
+            onDelete: () => _deleteDespesa(index),
           );
         },
       ),
       bottomNavigationBar: ButtonNavigation(
         total: total,
-        callback: _addDespesa,
+        callback: (ctx) => _openDespesaModal(),
       ),
     );
   }

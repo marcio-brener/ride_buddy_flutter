@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:ride_buddy_flutter/widgets/button_navigation.dart';
+import 'package:ride_buddy_flutter/widgets/despesa_list_item.dart';
 import 'package:ride_buddy_flutter/widgets/header.dart';
 
 class DespesasScreen extends StatefulWidget {
@@ -368,15 +369,8 @@ class _DespesasScreenState extends State<DespesasScreen> {
             Divider(thickness: 1, color: Colors.grey.shade300),
         itemBuilder: (context, index) {
           final item = _despesas[index];
-          return ListTile(
-            contentPadding: EdgeInsets.symmetric(vertical: 8),
-            title: Text(item['categoria']),
-            subtitle: Text(
-              'Data: ${DateFormat('dd/MM/yyyy').format(item['data'])}\n'
-              'Forma: ${item['formaPagamento']}${item['observacoes'].isNotEmpty ? "\nObs: ${item['observacoes']}" : ""}',
-            ),
-            trailing: Text('R\$ ${item['valor'].toStringAsFixed(2)}'),
-          );
+
+          return DespesaListItem(item: item);
         },
       ),
       bottomNavigationBar: ButtonNavigation(

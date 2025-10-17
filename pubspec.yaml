@@ -7,6 +7,9 @@ environment:
   sdk: ^3.9.0
 
 dependencies:
+  cloud_firestore: ^6.0.3
+  firebase_auth: ^6.1.1
+  firebase_storage: ^13.0.3
   flutter:
     sdk: flutter
   google_fonts: 6.3.2

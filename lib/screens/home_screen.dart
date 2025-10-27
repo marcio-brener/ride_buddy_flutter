@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ride_buddy_flutter/screens/login_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart'; 
 import 'despesas_screen.dart';
 import 'receitas_screen.dart';
 import 'relatorios_screen.dart';
@@ -8,7 +8,6 @@ import 'package:ride_buddy_flutter/models/menu_item.dart';
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
-  // Lista de itens do menu usando o model MenuItem
   final List<MenuItem> items = const [
     MenuItem(
       title: "Despesas",
@@ -27,7 +26,7 @@ class HomeScreen extends StatelessWidget {
     ),
   ];
 
-  // Método para navegar para a página correta
+  // ... (o seu método '_navigateToPage' continua igual, não mudei) ...
   void _navigateToPage(BuildContext context, int index) {
     if (index == 0) {
       Navigator.push(
@@ -47,6 +46,10 @@ class HomeScreen extends StatelessWidget {
     }
   }
 
+  Future<void> _signOut() async {
+    await FirebaseAuth.instance.signOut();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -56,14 +59,14 @@ class HomeScreen extends StatelessWidget {
         elevation: 0,
         toolbarHeight: 120,
         title: const Text(
-          "Ride Buddy",
-          style: TextStyle(
+        "Ride Buddy",
+        style: TextStyle(
             color: Colors.white,
             fontSize: 34,
             fontWeight: FontWeight.bold,
           ),
-        ),
-        backgroundColor: const Color.fromARGB(255, 248, 151, 33),
+      ),
+      backgroundColor: const Color.fromARGB(255, 248, 151, 33),
       ),
       drawer: Drawer(
         child: ListView(
@@ -73,12 +76,12 @@ class HomeScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               color: const Color.fromARGB(255, 248, 151, 33),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  SizedBox(height: 20),
-                  Text(
-                    "Menu",
-                    style: TextStyle(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+              SizedBox(height: 20),
+              Text(
+              "Menu",
+              style: TextStyle(
                       color: Colors.white,
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -92,12 +95,7 @@ class HomeScreen extends StatelessWidget {
               child: ListTile(
                 leading: Icon(Icons.exit_to_app, color: Colors.black),
                 title: Text("Sair"),
-                onTap: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => LoginScreen()),
-                  );
-                },
+                onTap: _signOut,
               ),
             ),
           ],
@@ -107,7 +105,7 @@ class HomeScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         itemCount: items.length,
         separatorBuilder: (context, index) =>
-            const Divider(thickness: 1, color: Colors.grey),
+        const Divider(thickness: 1, color: Colors.grey),
         itemBuilder: (context, index) {
           final item = items[index];
           return ListTile(
@@ -125,3 +123,4 @@ class HomeScreen extends StatelessWidget {
     );
   }
 }
+

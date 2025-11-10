@@ -127,29 +127,23 @@ class _ReceitasScreenState extends State<ReceitasScreen> {
     );
   }
 
-  // SUBSTITUA A FUNÇÃO ANTIGA POR ESTA
-
   void _deleteReceita(int index) {
     showDialog(
       context: context,
-      builder: (BuildContext dialogContext) { // Usar um nome diferente para o context do dialog
+      builder: (BuildContext dialogContext) {
         return AlertDialog(
-          // 1. Bordas arredondadas para combinar com o design do app
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16.0),
           ),
           
-          // 2. Título em negrito para melhor hierarquia visual
           title: const Text(
             'Excluir Receita',
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
           
-          // 3. Conteúdo com uma mensagem mais clara
           content: const Text('Tem certeza que deseja excluir esta receita? Esta ação não pode ser desfeita.'),
           
           actions: [
-            // 4. Botão "Cancelar" com estilo sutil
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
               child: Text(
@@ -158,11 +152,10 @@ class _ReceitasScreenState extends State<ReceitasScreen> {
               ),
             ),
             
-            // 5. Botão "Excluir" com estilo de AÇÃO DESTRUTIVA
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red, // Cor vermelha para indicar perigo
-                foregroundColor: Colors.white, // Texto branco para contraste
+                backgroundColor: Colors.red, 
+                foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12.0),
                 ),
@@ -171,12 +164,11 @@ class _ReceitasScreenState extends State<ReceitasScreen> {
                 setState(() {
                   _receitas.removeAt(index);
                 });
-                Navigator.pop(dialogContext); // Fecha o dialog
+                Navigator.pop(dialogContext);
               },
               child: const Text('Excluir'),
             ),
           ],
-          // 6. Espaçamento adicional para os botões
           actionsPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
         );
       },

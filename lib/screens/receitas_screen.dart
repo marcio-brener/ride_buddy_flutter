@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:ride_buddy_flutter/models/receita.dart';
+import 'package:ride_buddy_flutter/services/receita_service.dart';
 import 'package:ride_buddy_flutter/widgets/button_navigation.dart';
-import 'package:ride_buddy_flutter/widgets/header.dart';
 import 'package:ride_buddy_flutter/widgets/receita_list_item.dart';
 import 'package:ride_buddy_flutter/widgets/receita_modal.dart';
-import 'package:ride_buddy_flutter/models/data_repository.dart';
+import 'package:ride_buddy_flutter/widgets/header.dart';
 
 class ReceitasScreen extends StatefulWidget {
   const ReceitasScreen({super.key});
@@ -14,120 +14,63 @@ class ReceitasScreen extends StatefulWidget {
 }
 
 class _ReceitasScreenState extends State<ReceitasScreen> {
-  final List<Receita> _receitas = [ 
-    Receita(
-      app: "Uber",
-      value: 45.50,
-      distancia: 12.3,
-      localSaida: "Terminal Rodoviário Bragança Paulista",
-      localEntrada: "Jardim do Lago",
-      dataHora: DateTime.now(),
-    ),
-    Receita(
-      app: "iFood",
-      value: 32.00,
-      distancia: 7.8,
-      localSaida: "Restaurante no Centro",
-      localEntrada: "Planejada I",
-      dataHora: DateTime.now(),
-    ),
-    Receita(
-      app: "99Pop",
-      value: 27.75,
-      distancia: 6.4,
-      localSaida: "Lago do Taboão",
-      localEntrada: "Vila Aparecida",
-      dataHora: DateTime.now(),
-    ),
-    Receita(
-      app: "Rappi",
-      value: 22.50,
-      distancia: 5.9,
-      localSaida: "Supermercado União - Centro",
-      localEntrada: "Jardim Águas Claras",
-      dataHora: DateTime.now(),
-    ),
-    Receita(
-      app: "99",
-      value: 30.00,
-      distancia: 9.5,
-      localSaida: "Hospital Universitário São Francisco",
-      localEntrada: "Parque dos Estados",
-      dataHora: DateTime.now(),
-    ),
-    Receita(
-      app: "VRDrive",
-      value: 18.00,
-      distancia: 4.2,
-      localSaida: "Loja no Centro",
-      localEntrada: "Bairro do Matadouro",
-      dataHora: DateTime.now(),
-    ),
-    Receita(
-      app: "Uber",
-      value: 40.00,
-      distancia: 10.1,
-      localSaida: "Bragança Garden Shopping",
-      localEntrada: "Centro",
-      dataHora: DateTime.now(),
-    ),
-    Receita(
-      app: "iFood",
-      value: 25.50,
-      distancia: 6.7,
-      localSaida: "Pizzaria Vila Rica - Centro",
-      localEntrada: "Jardim Santa Helena",
-      dataHora: DateTime.now(),
-    ),
-    Receita(
-      app: "Uber",
-      value: 60.00,
-      distancia: 15.4,
-      localSaida: "Estádio Nabi Abi Chedid (Bragantino)",
-      localEntrada: "Jardim São Lourenço",
-      dataHora: DateTime.now(),
-    ),
+
+  final ReceitaService _receitaService = ReceitaService();
+
+  final List<String> _appsDisponiveis = const [
+    "Uber",
+    "99",
+    "99Pop",
+    "iFood",
+    "Rappi",
+    "VRDrive",
   ];
 
-  double get total => _receitas.fold(0, (sum, receita) => sum + receita.value);
-
-  void _openReceitaModal({Receita? receita, int? index}) {
-    final List<String> apps = [ "Uber", "99", "iFood", "Frete", "Rappi", "InDrive", "VRDrive" ];
-
+  void _openReceitaModal({Receita? receita}) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) {
+      builder: (modalContext) {
         return ReceitaModal(
-          apps: apps,
           rootContext: context,
           receitaToEdit: receita,
-          onSave: (data) {
-            final novaReceita = Receita(
-              app: data['app'] as String,
-              value: data['value'] as double,
-              distancia: data['distancia'] as double,
-              localSaida: data['localSaida'] as String,
-              localEntrada: data['localEntrada'] as String,
-              dataHora: data['dataHora'] as DateTime,
+          apps: _appsDisponiveis,
+          onSave: (data) async {
+            final bool isEditing = receita != null;
+
+            final receitaParaSalvar = Receita(
+              id: receita?.id, 
+              app: data['app'],
+              value: data['value'],
+              distancia: data['distancia'],
+              localSaida: data['localSaida'],
+              localEntrada: data['localEntrada'],
+              dataHora: data['dataHora'],
             );
-            
-            setState(() {
-              if (index != null) {
-                _receitas[index] = novaReceita;
+
+            try {
+              if (isEditing) {
+                // Chama o serviço de UPDATE
+                await _receitaService.updateReceita(receitaParaSalvar);
               } else {
-                _receitas.add(novaReceita);
-                DataRepository().receitas.add(novaReceita);
+                // Chama o serviço de CREATE
+                await _receitaService.addReceita(receitaParaSalvar);
               }
-            });
+            } catch (e) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Erro ao salvar receita: $e')),
+                );
+              }
+            }
           },
         );
       },
     );
   }
 
-  void _deleteReceita(int index) {
+  void _deleteReceita(String receitaId) {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -135,14 +78,12 @@ class _ReceitasScreenState extends State<ReceitasScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16.0),
           ),
-          
           title: const Text(
             'Excluir Receita',
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
-          
-          content: const Text('Tem certeza que deseja excluir esta receita? Esta ação não pode ser desfeita.'),
-          
+          content: const Text(
+              'Tem certeza que deseja excluir esta receita? Esta ação não pode ser desfeita.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
@@ -151,25 +92,31 @@ class _ReceitasScreenState extends State<ReceitasScreen> {
                 style: TextStyle(color: Colors.grey.shade700),
               ),
             ),
-            
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red, 
+                backgroundColor: Colors.red,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12.0),
                 ),
               ),
-              onPressed: () {
-                setState(() {
-                  _receitas.removeAt(index);
-                });
+              onPressed: () async {
+                try {
+                  await _receitaService.deletaReceita(receitaId);
+                } catch (e) {
+                   if (mounted) {
+                     ScaffoldMessenger.of(context).showSnackBar(
+                       SnackBar(content: Text('Erro ao excluir receita: $e')),
+                     );
+                   }
+                }
                 Navigator.pop(dialogContext);
               },
               child: const Text('Excluir'),
             ),
           ],
-          actionsPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          actionsPadding:
+              const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
         );
       },
     );
@@ -180,22 +127,59 @@ class _ReceitasScreenState extends State<ReceitasScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: const Header(text: "Receitas"),
-      body: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: _receitas.length,
-        separatorBuilder: (context, index) => Divider(thickness: 1, color: Colors.grey.shade300),
-        itemBuilder: (context, index) {
-          final Receita receita = _receitas[index];
-          return ReceitaListItem(
-            receita: receita,
-            onEdit: () => _openReceitaModal(receita: receita, index: index),
-            onDelete: () => _deleteReceita(index),
+      body: StreamBuilder<List<Receita>>(
+        stream: _receitaService.getReceitas(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(
+                child: Text('Erro ao carregar receitas: ${snapshot.error}'));
+          }
+
+          double total = 0.0;
+          List<Receita> receitas = [];
+
+          if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+            receitas = snapshot.data!;
+            total = receitas.fold(0.0, (sum, item) => sum + item.value);
+          }
+
+          return Column(
+            children: [
+              Expanded(
+                child: receitas.isEmpty
+                    ? const Center(
+                        child: Text(
+                          'Nenhuma receita adicionada ainda.\nClique em "Adicionar" para começar.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 16, color: Colors.grey),
+                        ),
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: receitas.length,
+                        separatorBuilder: (context, index) =>
+                            Divider(thickness: 1, color: Colors.grey.shade300),
+                        itemBuilder: (context, index) {
+                          final receita = receitas[index];
+                          return ReceitaListItem(
+                            receita: receita,
+                            onEdit: () => _openReceitaModal(receita: receita),
+                            onDelete: () => _deleteReceita(receita.id!),
+                          );
+                        },
+                      ),
+              ),
+              ButtonNavigation(
+                total: total,
+                callback: (ctx) => _openReceitaModal(), 
+              ),
+            ],
           );
         },
-      ),
-      bottomNavigationBar: ButtonNavigation(
-        total: total,
-        callback: (ctx) => _openReceitaModal(),
       ),
     );
   }

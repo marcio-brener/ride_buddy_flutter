@@ -5,7 +5,6 @@ import 'package:ride_buddy_flutter/widgets/despesa_list_item.dart';
 import 'package:ride_buddy_flutter/widgets/despesas_modal.dart';
 import 'package:ride_buddy_flutter/widgets/header.dart';
 import 'package:ride_buddy_flutter/models/despesa.dart';
-import 'package:ride_buddy_flutter/models/data_repository.dart';
 
 class DespesasScreen extends StatefulWidget {
   const DespesasScreen({super.key});

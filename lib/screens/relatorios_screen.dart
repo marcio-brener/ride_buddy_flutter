@@ -1,191 +1,294 @@
 import 'package:flutter/material.dart';
-import '../models/data_repository.dart';
+import 'package:intl/intl.dart';
+import 'package:ride_buddy_flutter/models/relatorio.dart';
+import 'package:ride_buddy_flutter/services/relatorio_service.dart';
+import 'package:ride_buddy_flutter/widgets/meta_modal.dart';
+import 'package:ride_buddy_flutter/widgets/header.dart';
 
-class RelatoriosScreen extends StatelessWidget {
+class RelatoriosScreen extends StatefulWidget {
   const RelatoriosScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final repo = DataRepository();
+  State<RelatoriosScreen> createState() => _RelatoriosScreenState();
+}
 
-    final totalGanhos = repo.totalReceitas;
-    final totalDespesas = repo.totalDespesas;
-    final meta = repo.meta;
-    final progresso = repo.progresso * 100;
+class _RelatoriosScreenState extends State<RelatoriosScreen>
+    with WidgetsBindingObserver {
+  final RelatorioService _service = RelatorioService();
+
+  DateTime _selectedMonth = DateTime.now();
+  Future<Relatorio>? _relatorioFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchData();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      _fetchData();
+    }
+  }
+
+  void _fetchData() {
+    setState(() {
+      _relatorioFuture = _service.getRelatorioMensal(_selectedMonth);
+    });
+  }
+
+  void _changeMonth(int increment) {
+    setState(() {
+      _selectedMonth = DateTime(
+        _selectedMonth.year,
+        _selectedMonth.month + increment,
+        1,
+      );
+    });
+    _fetchData();
+  }
+
+  void _openMetaModal(double currentMeta) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalContext) {
+        return MetaModal(
+          rootContext: context,
+          currentMeta: currentMeta,
+          onSave: (data) async {
+            final double novaMeta = data['meta'];
+            try {
+              await _service.updateMeta(novaMeta);
+              _fetchData();
+            } catch (e) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("Erro ao salvar meta: $e")),
+                );
+              }
+            }
+          },
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final String mesFormatado =
+        DateFormat('MMMM / y', 'pt_BR').format(_selectedMonth);
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text("Relatórios"),
-        backgroundColor: const Color.fromARGB(255, 248, 151, 33),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Resumo Mensal",
-              style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87),
-            ),
-            const SizedBox(height: 16),
-
-            // Card Meta
-            Card(
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              color: Colors.white,
-              elevation: 4,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    const Text(
-                      "Meta Mensal",
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      "R\$ ${meta.toStringAsFixed(2)}",
-                      style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green),
-                    ),
-                    const SizedBox(height: 16),
-                    LinearProgressIndicator(
-                      value: repo.progresso,
-                      backgroundColor: Colors.grey[300],
-                      color: Colors.green,
-                      minHeight: 12,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      "${progresso.toStringAsFixed(1)}% atingido",
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                  ],
+      appBar: const Header(text: "Relatórios"),
+      body: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            color: Colors.grey.shade100,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.chevron_left),
+                  onPressed: () => _changeMonth(-1),
                 ),
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Card Ganhos
-            Card(
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              color: Colors.white,
-              elevation: 4,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      "Ganhos",
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      "R\$ ${totalGanhos.toStringAsFixed(2)}",
-                      style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green),
-                    ),
-                  ],
+                Text(
+                  "${mesFormatado[0].toUpperCase()}${mesFormatado.substring(1)}",
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            // Card Despesas
-            Card(
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              color: Colors.white,
-              elevation: 4,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      "Despesas",
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      "R\$ ${totalDespesas.toStringAsFixed(2)}",
-                      style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.red),
-                    ),
-                  ],
+                IconButton(
+                  icon: const Icon(Icons.chevron_right),
+                  onPressed: () => _changeMonth(1),
                 ),
-              ),
+              ],
             ),
+          ),
+          Expanded(
+            child: FutureBuilder<Relatorio>(
+              future: _relatorioFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-            const SizedBox(height: 24),
+                if (snapshot.hasError) {
+                  return Center(
+                    child:
+                        Text("Erro ao carregar relatório: ${snapshot.error}"),
+                  );
+                }
 
-            // Resumo final
-            Card(
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              color: Colors.white,
-              elevation: 4,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    const Text(
-                      "Resumo Geral",
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text("Lucro Líquido:"),
-                        Text(
-                          "R\$ ${(totalGanhos - totalDespesas).toStringAsFixed(2)}",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: (totalGanhos - totalDespesas) >= 0
-                                ? Colors.green
-                                : Colors.red,
+                final relatorio = snapshot.data ?? Relatorio.vazio();
+
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Card(
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        elevation: 4,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    "Meta Mensal",
+                                    style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.edit,
+                                        size: 20, color: Colors.grey),
+                                    onPressed: () =>
+                                        _openMetaModal(relatorio.meta),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                "R\$ ${relatorio.meta.toStringAsFixed(2)}",
+                                style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              LinearProgressIndicator(
+                                value: relatorio.progresso,
+                                backgroundColor: Colors.grey[300],
+                                color: Colors.green,
+                                minHeight: 12,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                "${(relatorio.progresso * 100).toStringAsFixed(1)}% atingido",
+                                style: const TextStyle(fontSize: 16),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text("Meta Restante:"),
-                        Text(
-                          "R\$ ${(meta - totalGanhos).clamp(0, meta).toStringAsFixed(2)}",
-                          style: const TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 24),
+                      _buildInfoCard(
+                        title: "Ganhos (Receitas)",
+                        value: relatorio.totalReceitas,
+                        color: Colors.green,
+                      ),
+                      const SizedBox(height: 12),
+                      _buildInfoCard(
+                        title: "Gastos (Despesas)",
+                        value: relatorio.totalDespesas,
+                        color: Colors.red,
+                      ),
+                      const SizedBox(height: 24),
+                      Card(
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        elevation: 4,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            children: [
+                              const Text(
+                                "Resumo Geral",
+                                style: TextStyle(
+                                    fontSize: 18, fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 16),
+                              _buildResumoRow(
+                                title: "Lucro Líquido:",
+                                value: relatorio.lucroLiquido,
+                                color: relatorio.lucroLiquido >= 0
+                                    ? Colors.green
+                                    : Colors.red,
+                              ),
+                              const SizedBox(height: 8),
+                              _buildResumoRow(
+                                title: "Meta Restante:",
+                                value: relatorio.metaRestante,
+                                color: Colors.black87,
+                              ),
+                            ],
+                          ),
                         ),
-                      ],
-                    ),
-                  ],
-                ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoCard(
+      {required String title, required double value, required Color color}) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 4,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            Text(
+              "R\$ ${value.toStringAsFixed(2)}",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: color,
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildResumoRow(
+      {required String title, required double value, required Color color}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(title, style: const TextStyle(fontSize: 16)),
+        Text(
+          "R\$ ${value.toStringAsFixed(2)}",
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+      ],
     );
   }
 }

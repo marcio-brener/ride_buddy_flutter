@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:ride_buddy_flutter/models/relatorio.dart';
 import 'package:ride_buddy_flutter/services/relatorio_service.dart';
-import 'package:ride_buddy_flutter/widgets/meta_modal.dart';
 import 'package:ride_buddy_flutter/widgets/header.dart';
 
 class RelatoriosScreen extends StatefulWidget {
@@ -55,33 +54,6 @@ class _RelatoriosScreenState extends State<RelatoriosScreen>
       );
     });
     _fetchData();
-  }
-
-  void _openMetaModal(double currentMeta) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (modalContext) {
-        return MetaModal(
-          rootContext: context,
-          currentMeta: currentMeta,
-          onSave: (data) async {
-            final double novaMeta = data['meta'];
-            try {
-              await _service.updateMeta(novaMeta);
-              _fetchData();
-            } catch (e) {
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Erro ao salvar meta: $e")),
-                );
-              }
-            }
-          },
-        );
-      },
-    );
   }
 
   @override
@@ -148,23 +120,13 @@ class _RelatoriosScreenState extends State<RelatoriosScreen>
                           padding: const EdgeInsets.all(16),
                           child: Column(
                             children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text(
-                                    "Meta Mensal",
-                                    style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.edit,
-                                        size: 20, color: Colors.grey),
-                                    onPressed: () =>
-                                        _openMetaModal(relatorio.meta),
-                                  ),
-                                ],
+                              const Center(
+                                child: Text(
+                                  "Meta Mensal",
+                                  style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold),
+                                ),
                               ),
                               const SizedBox(height: 8),
                               Text(

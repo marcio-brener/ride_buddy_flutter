@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart'; 
 import 'despesas_screen.dart';
 import 'receitas_screen.dart';
 import 'relatorios_screen.dart';
 import 'package:ride_buddy_flutter/models/menu_item.dart';
+import 'package:ride_buddy_flutter/widgets/custom_drawer.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -26,7 +26,6 @@ class HomeScreen extends StatelessWidget {
     ),
   ];
 
-  // ... (o seu método '_navigateToPage' continua igual, não mudei) ...
   void _navigateToPage(BuildContext context, int index) {
     if (index == 0) {
       Navigator.push(
@@ -44,10 +43,6 @@ class HomeScreen extends StatelessWidget {
         MaterialPageRoute(builder: (context) => const RelatoriosScreen()),
       );
     }
-  }
-
-  Future<void> _signOut() async {
-    await FirebaseAuth.instance.signOut();
   }
 
   @override
@@ -68,39 +63,7 @@ class HomeScreen extends StatelessWidget {
       ),
       backgroundColor: const Color.fromARGB(255, 248, 151, 33),
       ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: const Color.fromARGB(255, 248, 151, 33),
-              child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-              SizedBox(height: 20),
-              Text(
-              "Menu",
-              style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.all(16),
-              child: ListTile(
-                leading: Icon(Icons.exit_to_app, color: Colors.black),
-                title: Text("Sair"),
-                onTap: _signOut,
-              ),
-            ),
-          ],
-        ),
-      ),
+      drawer: const CustomDrawer(),
       body: ListView.separated(
         padding: const EdgeInsets.all(16),
         itemCount: items.length,

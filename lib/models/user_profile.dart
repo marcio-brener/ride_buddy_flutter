@@ -1,14 +1,15 @@
 class UserProfile {
   final String id;
   final String nome;
-  final String? fotoUrl; // URL da foto (pode ser null)
+  final String? fotoUrl;
   final double meta;
-  
-  // Dados do Veículo
   final String modeloVeiculo;
-  final double kmPorLitro; // Consumo médio
-  final int intervaloTrocaOleo; // Ex: 10000 km
-  final int kmAtual; // Para calcular a próxima troca
+  final double kmPorLitro;
+  final int intervaloTrocaOleo;
+  final int kmAtual;
+  
+  // NOVO CAMPO:
+  final bool isSetupComplete; 
 
   UserProfile({
     required this.id,
@@ -19,6 +20,7 @@ class UserProfile {
     required this.kmPorLitro,
     required this.intervaloTrocaOleo,
     required this.kmAtual,
+    this.isSetupComplete = false, // Padrão é falso
   });
 
   Map<String, dynamic> toMap() {
@@ -30,6 +32,7 @@ class UserProfile {
       'kmPorLitro': kmPorLitro,
       'intervaloTrocaOleo': intervaloTrocaOleo,
       'kmAtual': kmAtual,
+      'isSetupComplete': isSetupComplete, // Salva no banco
     };
   }
 
@@ -43,14 +46,15 @@ class UserProfile {
       kmPorLitro: (map['kmPorLitro'] ?? 0).toDouble(),
       intervaloTrocaOleo: map['intervaloTrocaOleo'] ?? 10000,
       kmAtual: map['kmAtual'] ?? 0,
+      isSetupComplete: map['isSetupComplete'] ?? false, // Lê do banco
     );
   }
   
-  // Fábrica para usuário vazio/novo
   factory UserProfile.empty(String id) {
     return UserProfile(
       id: id, nome: '', meta: 4000, modeloVeiculo: '', 
-      kmPorLitro: 0, intervaloTrocaOleo: 1000, kmAtual: 0
+      kmPorLitro: 0, intervaloTrocaOleo: 10000, kmAtual: 0,
+      isSetupComplete: false,
     );
   }
 }

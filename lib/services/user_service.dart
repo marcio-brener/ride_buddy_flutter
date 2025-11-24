@@ -9,7 +9,7 @@ class UserService {
   String? get currentUserId => _auth.currentUser?.uid;
   String? get currentUserEmail => _auth.currentUser?.email;
 
-  // Busca os dados do perfil
+  /// Recuperação do objeto UserProfile do Firestore.
   Future<UserProfile> getUserProfile() async {
     final uid = currentUserId;
     if (uid == null) throw Exception("Usuário não logado");
@@ -19,16 +19,17 @@ class UserService {
     if (doc.exists && doc.data() != null) {
       return UserProfile.fromMap(doc.data()!, uid);
     } else {
+      // Retorna perfil vazio para forçar o onboarding se isSetupComplete for false
       return UserProfile.empty(uid);
     }
   }
 
-  // Salva/Atualiza os dados
+  /// Persistência do objeto UserProfile no Firestore.
   Future<void> saveUserProfile(UserProfile profile) async {
     final uid = currentUserId;
     if (uid == null) throw Exception("Usuário não logado");
 
-    // Usamos merge: true para não apagar subcoleções (despesas/receitas)
+    // Uso de SetOptions(merge: true) para evitar a exclusão de subcoleções (receitas/despesas)
     await _firestore.collection('users').doc(uid).set(
       profile.toMap(),
       SetOptions(merge: true), 

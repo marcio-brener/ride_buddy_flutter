@@ -6,6 +6,7 @@ import 'package:ride_buddy_flutter/screens/login_screen.dart';
 import 'package:ride_buddy_flutter/screens/home_screen.dart';
 import 'package:ride_buddy_flutter/screens/onboarding_screen.dart';
 import 'package:ride_buddy_flutter/services/user_service.dart';
+import 'package:ride_buddy_flutter/models/user_profile.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,7 +33,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// --- PORTEIRO ---
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
 
@@ -41,42 +41,39 @@ class AuthWrapper extends StatelessWidget {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
-        // 1. Carregando Auth
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        // 2. Se tem usuário logado, verifica o perfil
         if (snapshot.hasData) {
-          return FutureBuilder(
-            future: UserService().getUserProfile(), // Busca o perfil
+          return FutureBuilder<UserProfile>( // Especificamos o tipo aqui
+            future: UserService().getUserProfile(), 
             builder: (context, profileSnapshot) {
               if (profileSnapshot.connectionState == ConnectionState.waiting) {
-                // Tela de carregamento enquanto verifica o perfil
                 return const Scaffold(body: Center(child: CircularProgressIndicator(color: Colors.orange)));
               }
 
-              // 3. Verificação se o cadastro está completo
+              // Verifica o status do perfil
               if (profileSnapshot.hasData) {
                 final userProfile = profileSnapshot.data!;
-
-                // Adicionamos um critério para usuários LEGACY:
+                
+                // NOVO CRITÉRIO: Permite acesso se o setup está completo OU se já tiver nome cadastrado (usuário antigo)
                 final bool isLegacyUserComplete = userProfile.nome.isNotEmpty || userProfile.modeloVeiculo.isNotEmpty;
                 
-                // Se o setup foi marcado como completo OU se for um usuário antigo com dados:
                 if (userProfile.isSetupComplete || isLegacyUserComplete) {
-                    return const HomeScreen(); // Tudo certo, vai pra Home
+                  return const HomeScreen(); // Tudo certo, vai pra Home
                 } else {
-                    return const OnboardingScreen(); // Falta cadastro, vai pro Wizard
+                  return const OnboardingScreen(); // Falta cadastro, vai pro Wizard
                 }
               }
 
-              // Fallback em caso de erro (tenta ir pro onboarding)
+              // Fallback (se o profileSnapshot der erro, vai para o onboarding por segurança)
               return const OnboardingScreen();
             },
           );
         }
 
+        // Se não tem usuário, Login
         return const LoginScreen();
       },
     );

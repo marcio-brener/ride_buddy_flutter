@@ -9,63 +9,52 @@ class RelatorioService {
 
   String? get _userId => _auth.currentUser?.uid;
 
-  // --- Funções principais ---
-
-  /// Busca todos os dados e calcula o relatório para um mês específico
+  /// Busca todos os dados e calcula o relatório para um mês específico.
   Future<Relatorio> getRelatorioMensal(DateTime mes) async {
-    
     final userId = _userId;
-
-    print("RELATORIO_SERVICE: Tentando buscar dados para o User ID: $userId");
-    
     if (userId == null) throw Exception("Usuário não logado");
 
-
-
-    // 1. Define o início e o fim do mês
     final inicioMes = DateTime(mes.year, mes.month, 1);
     final fimMes = DateTime(mes.year, mes.month + 1, 0, 23, 59, 59);
 
-    // 2. Cria as três buscas (Futures) que rodarão em paralelo
     final metaFuture = _getMeta(userId);
-    
     final totalReceitasFuture = _getTotalReceitasDoMes(userId, inicioMes, fimMes);
-    final totalDespesasFuture = _getTotalDespesasDoMes(userId, inicioMes, fimMes);
+    final totalDespesasManualFuture = _getTotalDespesasDoMes(userId, inicioMes, fimMes);
+    final gastoGasolinaFuture = _getTotalGastoGasolinaDoMes(userId, inicioMes, fimMes);
 
-    // 3. Espera todas as buscas terminarem
     final results = await Future.wait([
       metaFuture,
       totalReceitasFuture,
-      totalDespesasFuture,
+      totalDespesasManualFuture,
+      gastoGasolinaFuture,
     ]);
 
-    // 4. Processa os resultados
     final double meta = results[0];
     final double totalReceitas = results[1];
-    final double totalDespesas = results[2];
+    final double totalDespesasManual = results[2];
+    final double gastoGasolinaAutomatico = results[3];
 
-    // 5. Retorna o objeto Relatorio completo
+    // Total de Despesas inclui Despesas Manuais + Gasolina Automática
+    final double totalDespesas = totalDespesasManual + gastoGasolinaAutomatico;
+
     return Relatorio(
       totalReceitas: totalReceitas,
       totalDespesas: totalDespesas,
       meta: meta,
     );
   }
-  
-  /// Atualiza a meta do usuário no Firestore
+
+  /// (Função updateMeta continua aqui...)
   Future<void> updateMeta(double novaMeta) async {
     final userId = _userId;
     if (userId == null) throw Exception("Usuário não logado");
     
     final userDoc = _firestore.collection('users').doc(userId);
-    // Esta linha está correta
     await userDoc.set({'meta': novaMeta}, SetOptions(merge: true));
   }
 
 
-  // --- Funções auxiliares de busca ---
-
-  /// Busca a meta do documento do usuário (padrão 4000 se não existir)
+  /// Recupera a meta do documento do usuário.
   Future<double> _getMeta(String userId) async {
     try {
       final doc = await _firestore.collection('users').doc(userId).get();
@@ -77,32 +66,42 @@ class RelatorioService {
       return 4000.0; 
     }
   }
-  
-  /// Busca Receitas dentro do período
+
+  /// Soma o valor total das Receitas do mês.
   Future<double> _getTotalReceitasDoMes(String userId, DateTime inicio, DateTime fim) async {
     final query = _firestore
-        .collection('users')
-        .doc(userId)
+        .collection('users').doc(userId)
         .collection('receitas')
         .where('dataHora', isGreaterThanOrEqualTo: inicio)
         .where('dataHora', isLessThanOrEqualTo: fim);
     
     final aggregate = await query.aggregate(sum('valor')).get();
-    
     return aggregate.getSum('valor') ?? 0.0;
   }
 
-  /// Busca Despesas dentro do período
+  /// Soma o valor total das Despesas Manuais do mês.
   Future<double> _getTotalDespesasDoMes(String userId, DateTime inicio, DateTime fim) async {
     final query = _firestore
-        .collection('users')
-        .doc(userId)
+        .collection('users').doc(userId)
         .collection('despesas')
         .where('data', isGreaterThanOrEqualTo: inicio)
         .where('data', isLessThanOrEqualTo: fim);
 
     final aggregate = await query.aggregate(sum('valor')).get();
-    
     return aggregate.getSum('valor') ?? 0.0;
+  }
+  
+  /// Soma o Gasto total de Gasolina (despesa automática) do mês.
+  Future<double> _getTotalGastoGasolinaDoMes(String userId, DateTime inicio, DateTime fim) async {
+    final query = _firestore
+        .collection('users').doc(userId)
+        .collection('jornadas')
+        .where('dataFim', isGreaterThanOrEqualTo: inicio)
+        .where('dataFim', isLessThanOrEqualTo: fim);
+
+    // Soma o campo 'gastoGasolina' da coleção 'jornadas'
+    final aggregate = await query.aggregate(sum('gastoGasolina')).get();
+    
+    return aggregate.getSum('gastoGasolina') ?? 0.0;
   }
 }

@@ -22,26 +22,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _kmLitroController = TextEditingController();
   final _oleoIntervaloController = TextEditingController();
   final _kmAtualController = TextEditingController();
-
-  String? _currentFotoUrl; 
+  final _precoGasolinaController = TextEditingController();
+  final _trocaOleoAlvoController = TextEditingController();
+  final _trocaPneuAlvoController = TextEditingController();
+  UserProfile? _originalProfile; 
 
   @override
   void initState() {
     super.initState();
     _loadData();
   }
+  
+  @override
+  void dispose() {
+    _nomeController.dispose();
+    _metaController.dispose();
+    _modeloController.dispose();
+    _kmLitroController.dispose();
+    _oleoIntervaloController.dispose();
+    _kmAtualController.dispose();
+    _precoGasolinaController.dispose();
+    _trocaOleoAlvoController.dispose();
+    _trocaPneuAlvoController.dispose();
+    super.dispose();
+  }
 
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     try {
       final profile = await _userService.getUserProfile();
-      _currentFotoUrl = profile.fotoUrl; 
+      
+      // ARMAZENA O PERFIL ORIGINAL: _currentFotoUrl é acessível via _originalProfile!.fotoUrl
+      _originalProfile = profile; 
       _nomeController.text = profile.nome;
       _metaController.text = profile.meta.toStringAsFixed(2);
       _modeloController.text = profile.modeloVeiculo;
       _kmLitroController.text = profile.kmPorLitro.toString();
       _oleoIntervaloController.text = profile.intervaloTrocaOleo.toString();
       _kmAtualController.text = profile.kmAtual.toString();
+      _precoGasolinaController.text = profile.precoGasolinaAtual.toStringAsFixed(2);
+      _trocaOleoAlvoController.text = profile.proximaTrocaOleoKm.toString();
+      _trocaPneuAlvoController.text = profile.proximaTrocaPneuKm.toString();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Erro ao carregar perfil: $e")));
@@ -55,10 +76,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     final String? userId = _userService.currentUserId;
 
-    if (userId == null) {
+    if (userId == null || _originalProfile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Erro: Usuário não identificado. Faça login novamente."),
+          content: Text("Erro: Recarregue a tela ou faça login novamente."),
           backgroundColor: Colors.red,
         ),
       );
@@ -68,19 +89,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() => _isLoading = true);
     
     try {
-      final profile = UserProfile(
-        id: userId,
+      final novoPerfil = _originalProfile!.copyWith(
         nome: _nomeController.text,
         meta: double.tryParse(_metaController.text) ?? 0,
         modeloVeiculo: _modeloController.text,
         kmPorLitro: double.tryParse(_kmLitroController.text) ?? 0,
         intervaloTrocaOleo: int.tryParse(_oleoIntervaloController.text) ?? 0,
         kmAtual: int.tryParse(_kmAtualController.text) ?? 0,
-        
-        fotoUrl: _currentFotoUrl, 
+        precoGasolinaAtual: double.tryParse(_precoGasolinaController.text) ?? 0,
+        proximaTrocaOleoKm: int.tryParse(_trocaOleoAlvoController.text) ?? 0,
+        proximaTrocaPneuKm: int.tryParse(_trocaPneuAlvoController.text) ?? 0,
       );
 
-      await _userService.saveUserProfile(profile);
+      await _userService.saveUserProfile(novoPerfil);
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -138,6 +159,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         controller: _modeloController,
                         label: "Modelo (Ex: Gol 1.6)"),
                     const SizedBox(height: 10),
+                     _buildTextField(
+                        controller: _precoGasolinaController,
+                        label: "Preço Atual da Gasolina (R\$)",
+                        isNumber: true),
+                    const SizedBox(height: 10),
                     _buildTextField(
                         controller: _kmLitroController,
                         label: "Consumo Médio (Km/L)",
@@ -151,6 +177,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _buildTextField(
                         controller: _kmAtualController,
                         label: "Hodômetro Atual (Km)",
+                        isNumber: true),
+                      
+                    const SizedBox(height: 25),
+
+                    const Text("Alvos de Próxima Manutenção",
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 10),
+                    _buildTextField(
+                        controller: _trocaOleoAlvoController,
+                        label: "KM Alvo Próxima Troca de Óleo",
+                        isNumber: true),
+                    const SizedBox(height: 10),
+                    _buildTextField(
+                        controller: _trocaPneuAlvoController,
+                        label: "KM Alvo Próxima Troca de Pneu",
                         isNumber: true),
 
                     const SizedBox(height: 30),

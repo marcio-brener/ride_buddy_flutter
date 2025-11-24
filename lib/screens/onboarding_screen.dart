@@ -21,30 +21,53 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   int _currentPage = 0;
   bool _isLoading = false;
 
-  // Dados temporários
-  String _nome = "";
-  String? _fotoBase64;
-  double _meta = 4000.0;
-  String _modelo = "";
-  double _consumo = 0.0;
-  int _oleo = 10000;
-  int _kmAtual = 0;
-
   // Controllers
   final _nomeController = TextEditingController();
   final _metaController = TextEditingController();
   final _modeloController = TextEditingController();
   final _consumoController = TextEditingController();
-  final _oleoController = TextEditingController();
+  final _oleoIntervaloController = TextEditingController(); 
   final _kmController = TextEditingController();
+  
+  // NOVOS CONTROLLERS (Preço e KM Alvo)
+  final _precoGasolinaController = TextEditingController(); 
+  final _trocaOleoAlvoController = TextEditingController();
+  final _trocaPneuAlvoController = TextEditingController();
+
+  // Dados temporários (para foto)
+  String? _fotoBase64;
+  
+  // Constantes de fallback
+  static const double _defaultMeta = 4000.0;
+  static const int _defaultOleoInterval = 10000;
+  static const int _defaultPneuInterval = 50000; 
 
   @override
   void dispose() {
     _pageController.dispose();
+    _nomeController.dispose();
+    _metaController.dispose();
+    _modeloController.dispose();
+    _consumoController.dispose();
+    _oleoIntervaloController.dispose();
+    _kmController.dispose();
+    _precoGasolinaController.dispose();
+    _trocaOleoAlvoController.dispose();
+    _trocaPneuAlvoController.dispose();
     super.dispose();
   }
 
+  /// Função para avançar para a próxima página do wizard.
   void _nextPage() {
+    if (_currentPage == 0) {
+      if (_nomeController.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("O nome é obrigatório para prosseguir.")),
+        );
+        return;
+      }
+    } 
+    
     _pageController.nextPage(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
@@ -53,7 +76,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Future<void> _pickImage() async {
     final XFile? image = await _picker.pickImage(
-        source: ImageSource.gallery, maxWidth: 400, imageQuality: 70);
+        source: ImageSource.gallery, maxWidth: 500, imageQuality: 70);
     if (image != null) {
       final bytes = await File(image.path).readAsBytes();
       setState(() {
@@ -62,31 +85,48 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
   }
 
+  /// Coleta dados, persiste no Firebase e finaliza o fluxo de onboarding.
   Future<void> _finishOnboarding() async {
     setState(() => _isLoading = true);
     
     try {
-      final uid = _userService.currentUserId!;
+      final uid = _userService.currentUserId;
+      if (uid == null) throw Exception("Sessão expirada. Faça login novamente.");
       
-      // Cria o perfil completo
+      // Coleta de dados
+      final double meta = double.tryParse(_metaController.text) ?? _defaultMeta;
+      final double consumo = double.tryParse(_consumoController.text) ?? 0.0;
+      final int oleoIntervalo = int.tryParse(_oleoIntervaloController.text) ?? _defaultOleoInterval;
+      final int kmAtual = int.tryParse(_kmController.text) ?? 0;
+      final double precoGasolina = double.tryParse(_precoGasolinaController.text) ?? 0.0;
+      
+      // Se KM Alvo não for preenchido, usa o KM Atual + Intervalo Padrão
+      final int trocaOleoAlvo = int.tryParse(_trocaOleoAlvoController.text) ?? (kmAtual + oleoIntervalo);
+      final int trocaPneuAlvo = int.tryParse(_trocaPneuAlvoController.text) ?? (kmAtual + _defaultPneuInterval);
+
       final profile = UserProfile(
         id: uid,
-        nome: _nomeController.text,
+        nome: _nomeController.text.isEmpty ? "Motorista" : _nomeController.text,
         fotoUrl: _fotoBase64,
-        meta: double.tryParse(_metaController.text) ?? 4000,
+        meta: meta,
         modeloVeiculo: _modeloController.text,
-        kmPorLitro: double.tryParse(_consumoController.text) ?? 0,
-        intervaloTrocaOleo: int.tryParse(_oleoController.text) ?? 10000,
-        kmAtual: int.tryParse(_kmController.text) ?? 0,
-        isSetupComplete: true, // MARCA COMO COMPLETO!
+        kmPorLitro: consumo,
+        intervaloTrocaOleo: oleoIntervalo,
+        kmAtual: kmAtual,
+        
+        // NOVOS DADOS SALVOS
+        precoGasolinaAtual: precoGasolina, 
+        proximaTrocaOleoKm: trocaOleoAlvo,
+        proximaTrocaPneuKm: trocaPneuAlvo,
+        isSetupComplete: true, // MARCA COMO CONCLUÍDO
       );
 
       await _userService.saveUserProfile(profile);
 
       if (mounted) {
-        // Vai para a Home e remove o histórico para não voltar ao onboarding
-        Navigator.of(context).pushReplacement(
+        Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const HomeScreen()),
+          (route) => false,
         );
       }
     } catch (e) {
@@ -123,7 +163,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               child: PageView(
                 controller: _pageController,
                 onPageChanged: (index) => setState(() => _currentPage = index),
-                physics: const NeverScrollableScrollPhysics(), // Impede deslizar manual
+                physics: const NeverScrollableScrollPhysics(), 
                 children: [
                   _buildStep1Perfil(),
                   _buildStep2Meta(),
@@ -149,7 +189,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       child: const Text("Voltar", style: TextStyle(color: Colors.grey)),
                     )
                   else
-                    const SizedBox(), // Espaço vazio para alinhar
+                    const SizedBox(), 
 
                   ElevatedButton(
                     onPressed: _currentPage == 2 ? _finishOnboarding : _nextPage,
@@ -184,14 +224,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  // --- PASSO 1: PERFIL ---
+  // --- 1: PERFIL (Nome e Foto) ---
   Widget _buildStep1Perfil() {
     ImageProvider? imageProvider;
     if (_fotoBase64 != null) {
       imageProvider = MemoryImage(base64Decode(_fotoBase64!));
     }
 
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -240,46 +280,52 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  // --- PASSO 2: META ---
+  // --- 2: META E CUSTOS DE COMBUSTÍVEL ---
   Widget _buildStep2Meta() {
-  const TextStyle largeGreenStyle = TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.green);
+    const TextStyle largeGreenStyle = TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.green);
 
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Icon(Icons.track_changes, size: 80, color: Colors.orange),
           const SizedBox(height: 20),
-          const Text("Qual é o seu objetivo?", style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 10),
-          const Text("Defina quanto você quer ganhar por mês.", textAlign: TextAlign.center, style: TextStyle(color: Colors.grey, fontSize: 16)),
-          const SizedBox(height: 40),
+          const Text("Objetivo e Custos", style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 30),
+
+          // Seção Meta
+          const Text("Meta Mensal (Líquido)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          const SizedBox(height: 8),
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic, 
+            textBaseline: TextBaseline.alphabetic,
             children: [
-              const Text("R\$ ", style: largeGreenStyle), 
+              const Text("R\$ ", style: largeGreenStyle),
               IntrinsicWidth( 
                 child: TextField(
                   controller: _metaController,
                   keyboardType: TextInputType.number,
                   style: largeGreenStyle, 
-                  decoration: const InputDecoration(
-                    hintText: "4000",
-                    border: InputBorder.none,
-                  ),
+                  decoration: const InputDecoration(hintText: "4000", border: InputBorder.none),
                 ),
               ),
             ],
           ),
+          
+          const Divider(height: 40),
+
+          // Seção Preço Gasolina
+          _buildSimpleField("Preço Atual da Gasolina (R\$)", _precoGasolinaController, 
+            isNumber: true, hint: "Ex: 5.49", icon: Icons.local_gas_station),
         ],
       ),
     );
   }
 
-  // --- PASSO 3: VEÍCULO ---
+  // --- 3: VEÍCULO E MANUTENÇÃO ---
   Widget _buildStep3Veiculo() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
@@ -288,22 +334,35 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         children: [
           const Text("Sobre seu veículo", style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
           const SizedBox(height: 10),
-          const Text("Isso ajuda a calcular seus custos reais.", style: TextStyle(color: Colors.grey, fontSize: 16)),
+          const Text("Essencial para cálculos de desgaste e alertas.", style: TextStyle(color: Colors.grey, fontSize: 16)),
           const SizedBox(height: 30),
           
-          _buildSimpleField("Modelo do Carro", _modeloController, hint: "Ex: Onix 1.0"),
+          _buildSimpleField("Modelo do Carro", _modeloController, hint: "Ex: Onix 1.0", icon: Icons.directions_car),
           const SizedBox(height: 20),
-          _buildSimpleField("Consumo Médio (Km/L)", _consumoController, isNumber: true, hint: "Ex: 12.5"),
+          _buildSimpleField("Consumo Médio (Km/L)", _consumoController, isNumber: true, hint: "Ex: 12.5", icon: Icons.speed),
           const SizedBox(height: 20),
-          _buildSimpleField("Troca de Óleo a cada (Km)", _oleoController, isNumber: true, hint: "Padrão: 10000"),
+          _buildSimpleField("Hodômetro Atual (Km)", _kmController, isNumber: true, hint: "Ex: 54000", icon: Icons.score),
           const SizedBox(height: 20),
-          _buildSimpleField("Hodômetro Atual (Km)", _kmController, isNumber: true, hint: "Ex: 54000"),
+
+          // Alvo de Troca de Óleo
+          _buildSimpleField("KM ALVO Próxima Troca de Óleo", _trocaOleoAlvoController, 
+            isNumber: true, hint: "Ex: 60000", icon: Icons.oil_barrel),
+          const SizedBox(height: 20),
+
+          // Alvo de Troca de Pneu
+          _buildSimpleField("KM ALVO Próxima Troca de Pneu", _trocaPneuAlvoController, 
+            isNumber: true, hint: "Ex: 104000", icon: Icons.tire_repair),
+          const SizedBox(height: 20),
+
+          // Intervalo para fins informativos (opcional)
+          _buildSimpleField("Intervalo Padrão de Troca de Óleo (Km)", _oleoIntervaloController, 
+            isNumber: true, hint: "10000", icon: Icons.swap_horiz),
         ],
       ),
     );
   }
 
-  Widget _buildSimpleField(String label, TextEditingController controller, {bool isNumber = false, String? hint}) {
+  Widget _buildSimpleField(String label, TextEditingController controller, {bool isNumber = false, String? hint, IconData? icon}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -314,6 +373,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           keyboardType: isNumber ? TextInputType.number : TextInputType.text,
           decoration: InputDecoration(
             hintText: hint,
+            prefixIcon: icon != null ? Icon(icon, color: Colors.grey) : null,
             filled: true,
             fillColor: Colors.grey.shade100,
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),

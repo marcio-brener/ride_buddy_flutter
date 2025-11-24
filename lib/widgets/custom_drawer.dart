@@ -26,29 +26,23 @@ class _CustomDrawerState extends State<CustomDrawer> {
   }
 
   Future<void> _loadUser() async {
-    try {
-      final profile = await _userService.getUserProfile();
-      if (mounted) {
-        setState(() {
-          _userProfile = profile;
-        });
+      try {
+        final profile = await _userService.getUserProfile();
+        if (mounted) {
+          setState(() {
+            _userProfile = profile;
+          });
+        }
+      } catch (e) {
+        print("Erro ao carregar perfil no drawer: $e");
       }
-    } catch (e) {
-      print("Erro ao carregar perfil no drawer: $e");
     }
-  }
 
-  Future<void> _saveImage(String? base64Image) async {
+    Future<void> _saveImage(String? base64Image) async {
     if (_userProfile != null) {
-      final novoPerfil = UserProfile(
-        id: _userProfile!.id,
-        nome: _userProfile!.nome,
-        meta: _userProfile!.meta,
-        modeloVeiculo: _userProfile!.modeloVeiculo,
-        kmPorLitro: _userProfile!.kmPorLitro,
-        intervaloTrocaOleo: _userProfile!.intervaloTrocaOleo,
-        kmAtual: _userProfile!.kmAtual,
-        fotoUrl: base64Image,
+  
+      final novoPerfil = _userProfile!.copyWith(
+        fotoUrl: () => base64Image, 
       );
 
       await _userService.saveUserProfile(novoPerfil);

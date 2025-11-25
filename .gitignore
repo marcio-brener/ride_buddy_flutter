@@ -52,4 +52,4 @@ lib/firebase_options.dart
 
 
 #maps
-android\app\src\main\AndroidManifest.xml
+android/app/src/main/AndroidManifest.xml

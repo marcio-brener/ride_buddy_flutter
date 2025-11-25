@@ -111,10 +111,10 @@ class _JornadaScreenState extends State<JornadaScreen> {
     ) ?? 0.0;
     
     if (finalKm > 0) {
-      final jornadaParaSalvar = jornada.copyWith(
-        kmPercorrido: finalKm,
-        duracaoSegundos: _controller.seconds, // Salva o tempo registrado
-      );
+    final jornadaParaSalvar = jornada.copyWith(
+      kmPercorrido: finalKm,
+      duracaoSegundos: _controller.seconds, 
+    );
       
       await _jornadaService.saveJornada(jornadaParaSalvar, userProfile); 
       

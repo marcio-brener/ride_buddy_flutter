@@ -1,23 +1,36 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart'; 
-import 'despesas_screen.dart';
-import 'receitas_screen.dart';
-import 'relatorios_screen.dart';
+import 'package:ride_buddy_flutter/screens/despesas_screen.dart';
+import 'package:ride_buddy_flutter/screens/receitas_screen.dart';
+import 'package:ride_buddy_flutter/screens/relatorios_screen.dart';
+import 'package:ride_buddy_flutter/screens/jornada_screen.dart'; 
+import 'package:ride_buddy_flutter/screens/jornada_list_screen.dart'; 
 import 'package:ride_buddy_flutter/models/menu_item.dart';
+import 'package:ride_buddy_flutter/widgets/custom_drawer.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
+  // ATUALIZADA A LISTA DE ITENS
   final List<MenuItem> items = const [
     MenuItem(
-      title: "Despesas",
-      subtitle: "Gerencie e registre seus gastos para manter o controle financeiro.",
-      image: "assets/capital.png",
+      title: "Registrar Jornada",
+      subtitle: "Inicie o rastreamento para calcular gasolina e desgaste.",
+      image: "assets/capital.png", // Use um ícone relevante
+    ),
+    MenuItem(
+      title: "Jornadas Anteriores",
+      subtitle: "Visualize e gerencie seu histórico de viagens.",
+      image: "assets/relatorio-de-negocios.png", // Use um ícone relevante
     ),
     MenuItem(
       title: "Receitas",
       subtitle: "Acompanhe suas receitas e mantenha o equilíbrio das suas finanças.",
       image: "assets/revenue-growth.png",
+    ),
+    MenuItem(
+      title: "Despesas",
+      subtitle: "Gerencie e registre seus gastos para manter o controle financeiro.",
+      image: "assets/capital.png",
     ),
     MenuItem(
       title: "Relatórios",
@@ -26,28 +39,28 @@ class HomeScreen extends StatelessWidget {
     ),
   ];
 
-  // ... (o seu método '_navigateToPage' continua igual, não mudei) ...
   void _navigateToPage(BuildContext context, int index) {
+    Widget targetPage;
+    
+    // Mapeamento de índices atualizado
     if (index == 0) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const DespesasScreen()),
-      );
+      targetPage = const JornadaScreen();
     } else if (index == 1) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => ReceitasScreen()),
-      );
+      targetPage = const JornadaListScreen();
     } else if (index == 2) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const RelatoriosScreen()),
-      );
+      targetPage = ReceitasScreen();
+    } else if (index == 3) {
+      targetPage = const DespesasScreen();
+    } else if (index == 4) {
+      targetPage = const RelatoriosScreen();
+    } else {
+      return;
     }
-  }
-
-  Future<void> _signOut() async {
-    await FirebaseAuth.instance.signOut();
+    
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => targetPage),
+    );
   }
 
   @override
@@ -59,48 +72,16 @@ class HomeScreen extends StatelessWidget {
         elevation: 0,
         toolbarHeight: 120,
         title: const Text(
-        "Ride Buddy",
-        style: TextStyle(
+          "Ride Buddy",
+          style: TextStyle(
             color: Colors.white,
             fontSize: 34,
             fontWeight: FontWeight.bold,
           ),
-      ),
-      backgroundColor: const Color.fromARGB(255, 248, 151, 33),
-      ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: const Color.fromARGB(255, 248, 151, 33),
-              child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-              SizedBox(height: 20),
-              Text(
-              "Menu",
-              style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.all(16),
-              child: ListTile(
-                leading: Icon(Icons.exit_to_app, color: Colors.black),
-                title: Text("Sair"),
-                onTap: _signOut,
-              ),
-            ),
-          ],
         ),
+        backgroundColor: const Color.fromARGB(255, 248, 151, 33),
       ),
+      drawer: const CustomDrawer(),
       body: ListView.separated(
         padding: const EdgeInsets.all(16),
         itemCount: items.length,
@@ -123,4 +104,3 @@ class HomeScreen extends StatelessWidget {
     );
   }
 }
-

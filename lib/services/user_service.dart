@@ -14,7 +14,8 @@ class UserService {
     final uid = currentUserId;
     if (uid == null) throw Exception("Usuário não logado");
 
-    final doc = await _firestore.collection('users').doc(uid).get();
+    final doc = await _firestore.collection('users').doc(uid).get(
+      const GetOptions(source: Source.serverAndCache));
 
     if (doc.exists && doc.data() != null) {
       return UserProfile.fromMap(doc.data()!, uid);

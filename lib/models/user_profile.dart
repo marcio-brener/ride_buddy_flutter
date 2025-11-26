@@ -32,7 +32,6 @@ class UserProfile {
     this.isSetupComplete = false,
   });
 
-  // Método copyWith (mantido)
   UserProfile copyWith({
     String? id,
     String? nome,
@@ -86,12 +85,12 @@ class UserProfile {
       id: id,
       nome: map['nome'] ?? '',
       fotoUrl: map['fotoUrl'],
-      meta: (map['meta'] as num? ?? 4000.0).toDouble(), // Converte para num antes de toDouble
+      meta: (map['meta'] as num? ?? 4000.0).toDouble(),
       modeloVeiculo: map['modeloVeiculo'] ?? '',
-      kmPorLitro: (map['kmPorLitro'] as num? ?? 0.0).toDouble(), // *** Corrigido ***
+      kmPorLitro: (map['kmPorLitro'] as num? ?? 0.0).toDouble(),
       intervaloTrocaOleo: map['intervaloTrocaOleo'] ?? 10000,
       kmAtual: map['kmAtual'] ?? 0,
-      precoGasolinaAtual: (map['precoGasolinaAtual'] as num? ?? 0.0).toDouble(), // *** Corrigido ***
+      precoGasolinaAtual: (map['precoGasolinaAtual'] as num? ?? 0.0).toDouble(),
       proximaTrocaOleoKm: map['proximaTrocaOleoKm'] ?? 0,
       proximaTrocaPneuKm: map['proximaTrocaPneuKm'] ?? 0,
       isSetupComplete: map['isSetupComplete'] ?? false,

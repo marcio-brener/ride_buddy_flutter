@@ -187,6 +187,8 @@ class JornadaService {
     final double precoGasolina = profile.precoGasolinaAtual;
     final double kmPorLitro = profile.kmPorLitro;
 
+    print('DEBUG FINAL: KM/L: $kmPorLitro, Preço Gasolina: $precoGasolina, Distância: $distanciaPercorrida');
+
     final double gastoTotalGasolina = (kmPorLitro > 0 && precoGasolina > 0)
         ? (distanciaPercorrida / kmPorLitro) * precoGasolina : 0.0;
 
@@ -224,6 +226,30 @@ class JornadaService {
 
     FlutterBackgroundService().invoke("stopService");
     _controller.reset();
+  }
+
+  Jornada recalculateJornada({
+    required Jornada jornadaBase,
+    required double kmFinal,
+    required UserProfile profile,
+  }) {
+    final double precoGasolina = profile.precoGasolinaAtual;
+    final double kmPorLitro = profile.kmPorLitro;
+
+    // Refaz o cálculo com o KM FINAL
+    final double gastoTotalGasolina = (kmPorLitro > 0 && precoGasolina > 0)
+        ? (kmFinal / kmPorLitro) * precoGasolina
+        : 0.0;
+
+    final double desgaste = kmFinal;
+
+    // Cria a nova jornada, copiando os dados originais e substituindo os campos
+    return jornadaBase.copyWith(
+      kmPercorrido: kmFinal,
+      gastoGasolina: gastoTotalGasolina,
+      desgasteOleoKm: desgaste,
+      desgastePneuKm: desgaste,
+    );
   }
 
   Stream<List<Jornada>> getJornadas() {

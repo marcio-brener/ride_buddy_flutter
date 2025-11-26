@@ -11,6 +11,7 @@ import 'package:ride_buddy_flutter/services/user_service.dart';
 
 // Identificadores de Serviço e Notificação
 const String notificationChannelId = 'ridetracking_foreground';
+const String statusNotificationChannelId = 'jornada_status';
 
 // --- CLASSE DE CONTROLE DE ESTADO (Singleton para comunicação) ---
 class JornadaController {
@@ -87,27 +88,41 @@ class JornadaService {
   static Future<void> initializeService() async {
     final service = FlutterBackgroundService();
 
-    const AndroidNotificationChannel channel = AndroidNotificationChannel(
+    // Canal para notificação persistente (Foreground Service)
+    const AndroidNotificationChannel foregroundChannel = AndroidNotificationChannel(
       notificationChannelId,
       'Rastreamento de Jornada',
       description: 'Canal para serviço de rastreamento em segundo plano.',
       importance: Importance.low,
     );
 
+    // Canal para notificação de status (Notificação física com som/vibração)
+    const AndroidNotificationChannel statusChannel = AndroidNotificationChannel(
+      statusNotificationChannelId,
+      'Notificações de Status da Jornada',
+      description: 'Notificações de status de pausa/execução.',
+      importance: Importance.max, // Importância alta para notificação física
+    );
+
     final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
         FlutterLocalNotificationsPlugin();
 
+    // Cria os canais de notificação
     await flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(channel);
+        ?.createNotificationChannel(foregroundChannel);
+    await flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(statusChannel);
 
     await service.configure(
       androidConfiguration: AndroidConfiguration(
         onStart: onStartService,
         isForegroundMode: true,
         autoStart: false,
-        notificationChannelId: notificationChannelId,
+        notificationChannelId: notificationChannelId, // Usa o canal de foreground
       ),
       iosConfiguration: IosConfiguration(
         onForeground: onStartService,
@@ -118,7 +133,6 @@ class JornadaService {
   }
 
   // --- MÉTODOS DE CONTROLE DA JORNADA (FRONT-END) ---
-  // ... (startTracking, pauseTracking, resumeTracking, stopTracking, saveJornada, getJornadas, deleteJornada mantidos) ...
 
   Future<void> startTracking() async {
     // 1. Checagem de Permissões
@@ -149,7 +163,7 @@ class JornadaService {
     _controller.isRunning = true;
     _controller.updateData(isRunning: true, isPaused: false);
 
-    // Avisa o Background Service para começar a escuta
+    // Avisa o Background Service para começar a escuta e disparar a notificação inicial
     service.invoke("startGpsListener");
   }
 
@@ -168,13 +182,15 @@ class JornadaService {
 
     final profile = await _userService.getUserProfile();
     final double distanciaPercorrida = _controller.distanceKm;
+    final int duracaoSegundos = _controller.seconds; 
 
     final double precoGasolina = profile.precoGasolinaAtual;
     final double kmPorLitro = profile.kmPorLitro;
 
+    print('DEBUG FINAL: KM/L: $kmPorLitro, Preço Gasolina: $precoGasolina, Distância: $distanciaPercorrida');
+
     final double gastoTotalGasolina = (kmPorLitro > 0 && precoGasolina > 0)
-        ? (distanciaPercorrida / kmPorLitro) * precoGasolina
-        : 0.0;
+        ? (distanciaPercorrida / kmPorLitro) * precoGasolina : 0.0;
 
     final double desgaste = distanciaPercorrida;
 
@@ -182,6 +198,7 @@ class JornadaService {
       id: '',
       dataFim: DateTime.now(),
       kmPercorrido: distanciaPercorrida,
+      duracaoSegundos: duracaoSegundos, 
       gastoGasolina: gastoTotalGasolina,
       desgasteOleoKm: desgaste,
       desgastePneuKm: desgaste,
@@ -198,6 +215,7 @@ class JornadaService {
         .collection('jornadas')
         .add(jornada.toMap());
 
+    // O código da tela já passa a duração, mas ela não afeta o KM atual.
     final novoKmAtual = profile.kmAtual + jornada.kmPercorrido.toInt();
 
     final profileComKmAtualizado = profile.copyWith(
@@ -208,6 +226,30 @@ class JornadaService {
 
     FlutterBackgroundService().invoke("stopService");
     _controller.reset();
+  }
+
+  Jornada recalculateJornada({
+    required Jornada jornadaBase,
+    required double kmFinal,
+    required UserProfile profile,
+  }) {
+    final double precoGasolina = profile.precoGasolinaAtual;
+    final double kmPorLitro = profile.kmPorLitro;
+
+    // Refaz o cálculo com o KM FINAL
+    final double gastoTotalGasolina = (kmPorLitro > 0 && precoGasolina > 0)
+        ? (kmFinal / kmPorLitro) * precoGasolina
+        : 0.0;
+
+    final double desgaste = kmFinal;
+
+    // Cria a nova jornada, copiando os dados originais e substituindo os campos
+    return jornadaBase.copyWith(
+      kmPercorrido: kmFinal,
+      gastoGasolina: gastoTotalGasolina,
+      desgasteOleoKm: desgaste,
+      desgastePneuKm: desgaste,
+    );
   }
 
   Stream<List<Jornada>> getJornadas() {
@@ -246,32 +288,60 @@ class JornadaService {
     return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
+  // Função auxiliar para mostrar a notificação não persistente (Problema 2)
+  static void _showStatusNotification(
+      String status, FlutterLocalNotificationsPlugin plugin) {
+    plugin.show(
+      // Usar um ID diferente do foreground service ID
+      1, 
+      "Status da Jornada",
+      "Rastreamento $status!",
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          statusNotificationChannelId, 
+          'Notificações de Status da Jornada',
+          icon: 'ic_bg_service_small',
+          importance: Importance.max, // Importância alta para notificação física
+          priority: Priority.high,
+          ticker: 'ticker',
+        ),
+      ),
+    );
+  }
+
   /// Função que roda em um isolate separado (segundo plano)
   @pragma('vm:entry-point')
   static Future<void> onStartService(ServiceInstance service) async {
     await Firebase.initializeApp();
 
     final serviceController = JornadaController();
-
     final androidService = service is AndroidServiceInstance ? service : null;
+    final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+        FlutterLocalNotificationsPlugin();
 
     // GARANTIR QUE O RASTREAMENTO COMEÇA COMO ATIVO
     serviceController.isRunning = true;
     serviceController.updateData(isRunning: true, isPaused: false);
+    
+    // Notificação de que o serviço foi iniciado (Problema 2)
+    _showStatusNotification("Iniciado", flutterLocalNotificationsPlugin);
+
 
     // 1. Listener para comandos da UI (pause/resume/stop)
-    service
-        .on("setAsPaused")
-        .listen((event) => serviceController.updateData(isPaused: true));
-    service
-        .on("setAsRunning")
-        .listen((event) => serviceController.updateData(isPaused: false));
+    service.on("setAsPaused").listen((event) {
+      serviceController.updateData(isPaused: true);
+      _showStatusNotification("Pausado", flutterLocalNotificationsPlugin); // Notificação
+    });
+    service.on("setAsRunning").listen((event) {
+      serviceController.updateData(isPaused: false);
+      _showStatusNotification("Retomado", flutterLocalNotificationsPlugin); // Notificação
+    });
     service.on("stopService").listen((event) {
       serviceController.isRunning = false;
       service.stopSelf();
     });
 
-    // 2. Lógica do Timer e Notificação Persistente
+    // 2. Lógica do Timer e Notificação Persistente (Problema 3)
     Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!serviceController.isPaused && serviceController.isRunning) {
         final int newTime = serviceController.seconds + 1;
@@ -281,7 +351,7 @@ class JornadaService {
 
       final String timeString = _formatTime(serviceController.seconds);
 
-      // Atualiza a notificação
+      // Atualiza a notificação de Foreground (persistente)
       if (androidService != null) {
         androidService.setForegroundNotificationInfo(
           title: "Ride Buddy: Rastreamento Ativo",
@@ -289,6 +359,17 @@ class JornadaService {
               "Tempo: $timeString | KM: ${serviceController.distanceKm.toStringAsFixed(2)} km",
         );
       }
+
+      // Envia dados para a UI a cada segundo (resolve o timer estático)
+      service.invoke(
+        'update', // Não usado diretamente, mas garante o envio de dados
+        {
+          'km': serviceController.distanceKm,
+          'time': serviceController.seconds,
+          'isRunning': serviceController.isRunning,
+          'isPaused': serviceController.isPaused,
+        },
+      );
 
       if (!serviceController.isRunning) {
         timer.cancel();

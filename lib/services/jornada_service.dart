@@ -293,10 +293,10 @@ class JornadaService {
       String status, FlutterLocalNotificationsPlugin plugin) {
     plugin.show(
       // Usar um ID diferente do foreground service ID
-      1, 
-      "Status da Jornada",
-      "Rastreamento $status!",
-      const NotificationDetails(
+      id: 1, 
+      title: "Status da Jornada",
+      body: "Rastreamento $status!",
+      notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
           statusNotificationChannelId, 
           'Notificações de Status da Jornada',

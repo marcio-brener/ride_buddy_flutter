@@ -93,7 +93,7 @@ class _ReceitaModalState extends State<ReceitaModal> {
 
             /// Aplicativo
             DropdownButtonFormField<String>(
-              value: appSelecionado,
+              initialValue: appSelecionado,
                decoration: InputDecoration(
                 hintText: 'Aplicativo',
                 filled: true,

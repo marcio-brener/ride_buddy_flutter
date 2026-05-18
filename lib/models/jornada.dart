@@ -35,7 +35,7 @@ class Jornada {
 
   /// Construção do objeto a partir do mapeamento do Firestore.
   factory Jornada.fromMap(Map<String, dynamic> map, String documentId) {
-    final getDouble = (key) => (map[key] ?? 0.0).toDouble();
+    getDouble(key) => (map[key] ?? 0.0).toDouble();
     
     return Jornada(
       id: documentId,

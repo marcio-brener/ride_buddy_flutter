@@ -85,7 +85,7 @@ class _DespesasModalState extends State<DespesasModal> {
             
             // Categoria
             DropdownButtonFormField<String>(
-              value: categoria,
+              initialValue: categoria,
               decoration: InputDecoration(
                 hintText: 'Categoria',
                 filled: true,
@@ -138,7 +138,7 @@ class _DespesasModalState extends State<DespesasModal> {
 
             // Forma de pagamento
             DropdownButtonFormField<String>(
-              value: formaPagamento,
+              initialValue: formaPagamento,
               decoration: InputDecoration(
                 hintText: 'Forma de pagamento',
                 filled: true,

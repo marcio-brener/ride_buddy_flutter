@@ -1,10 +1,15 @@
 import 'dart:async';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:ride_buddy_flutter/models/jornada.dart';
+import 'package:ride_buddy_flutter/models/template.dart';
 import 'package:ride_buddy_flutter/services/jornada_service.dart';
+import 'package:ride_buddy_flutter/services/template_service.dart';
 import 'package:ride_buddy_flutter/services/user_service.dart';
 import 'package:ride_buddy_flutter/widgets/header.dart';
+import 'package:ride_buddy_flutter/widgets/save_template_dialog.dart';
+import 'package:ride_buddy_flutter/widgets/template_chip_row.dart';
 
 class JornadaScreen extends StatefulWidget {
   const JornadaScreen({super.key});
@@ -27,7 +32,6 @@ class _JornadaScreenState extends State<JornadaScreen> {
   bool _isTracking = false;
   bool _isPaused = false;
 
-  final TextEditingController _kmController = TextEditingController();
 
   @override
   void initState() {
@@ -55,7 +59,6 @@ class _JornadaScreenState extends State<JornadaScreen> {
   void dispose() {
     _dataSubscription?.cancel();
     _mapController?.dispose();
-    _kmController.dispose();
     super.dispose();
   }
 
@@ -102,28 +105,25 @@ class _JornadaScreenState extends State<JornadaScreen> {
   }
 
   Future<void> _finishJornada() async {
-    // 1. Obter a Jornada calculada com o KM rastreado E o UserProfile
     final jornadaRastreada = await _jornadaService.stopTracking();
     final userProfile = await _userService.getUserProfile();
 
-    // 2. Mostrar o diálogo para edição do KM (finalKm virá com o valor editado)
     final double finalKm = await showDialog<double>(
           context: context,
           barrierDismissible: false,
-          builder: (context) =>
-              _buildFinalizeDialog(jornadaRastreada.kmPercorrido),
+          builder: (_) => _FinalizeJornadaDialog(
+            suggestedKm: jornadaRastreada.kmPercorrido,
+          ),
         ) ??
         0.0;
 
     if (finalKm > 0) {
-      // 3. RECÁLCULO DOS CUSTOS NO SERVICE com o KM final validado
       final Jornada jornadaParaSalvar = _jornadaService.recalculateJornada(
         jornadaBase: jornadaRastreada,
         kmFinal: finalKm,
         profile: userProfile,
       );
 
-      // 4. Salvar a Jornada Recalculada
       await _jornadaService.saveJornada(jornadaParaSalvar, userProfile);
 
       if (mounted) {
@@ -138,45 +138,6 @@ class _JornadaScreenState extends State<JornadaScreen> {
       _controller.reset();
       if (mounted) Navigator.pop(context);
     }
-  }
-
-  Widget _buildFinalizeDialog(double suggestedKm) {
-    _kmController.text = suggestedKm.toStringAsFixed(2);
-
-    return AlertDialog(
-      title: const Text("Confirmar Jornada"),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text("KM Percorrido detectado:"),
-          Text("${suggestedKm.toStringAsFixed(2)} km",
-              style: const TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 15),
-          TextField(
-            controller: _kmController,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-                labelText: "KM Final (Edite se necessário)"),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, 0.0),
-          child: const Text("Cancelar"),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            final double? finalKm = double.tryParse(_kmController.text);
-            Navigator.pop(context, finalKm ?? 0.0);
-          },
-          style: ElevatedButton.styleFrom(
-              backgroundColor: const Color.fromARGB(255, 248, 151, 33)),
-          child: const Text("Salvar", style: TextStyle(color: Colors.white)),
-        ),
-      ],
-    );
   }
 
   @override
@@ -297,6 +258,143 @@ class _JornadaScreenState extends State<JornadaScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         elevation: 3,
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Finalize dialog with template support
+// ---------------------------------------------------------------------------
+
+class _FinalizeJornadaDialog extends StatefulWidget {
+  final double suggestedKm;
+
+  const _FinalizeJornadaDialog({required this.suggestedKm});
+
+  @override
+  State<_FinalizeJornadaDialog> createState() =>
+      _FinalizeJornadaDialogState();
+}
+
+class _FinalizeJornadaDialogState extends State<_FinalizeJornadaDialog> {
+  late final TextEditingController _kmController;
+  final _templateService = TemplateService();
+
+  static const _kAccent = Color.fromARGB(255, 248, 151, 33);
+
+  @override
+  void initState() {
+    super.initState();
+    _kmController = TextEditingController(
+        text: widget.suggestedKm.toStringAsFixed(2));
+  }
+
+  @override
+  void dispose() {
+    _kmController.dispose();
+    super.dispose();
+  }
+
+  void _applyTemplate(Template? template) {
+    if (template == null) {
+      _kmController.text = widget.suggestedKm.toStringAsFixed(2);
+      return;
+    }
+
+    final p = template.payload;
+    if (p['kmOverride'] != null) {
+      _kmController.text = (p['kmOverride'] as double).toStringAsFixed(2);
+    } else if (p['kmOffset'] != null) {
+      final result = widget.suggestedKm + (p['kmOffset'] as double);
+      _kmController.text = result.toStringAsFixed(2);
+    }
+    _templateService.incrementUsage(template.id);
+  }
+
+  Future<void> _saveAsTemplate() async {
+    final name = await showDialog<String>(
+      context: context,
+      builder: (_) => const SaveTemplateDialog(suggestedName: 'Jornada padrão'),
+    );
+    if (name == null || !mounted) return;
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final kmValue = double.tryParse(_kmController.text);
+    await _templateService.saveTemplate(Template(
+      id: '',
+      userId: user.uid,
+      formType: FormType.jornadaFinal,
+      name: name,
+      createdAt: DateTime.now(),
+      payload: {'kmOverride': kmValue},
+    ));
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Modelo salvo!')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text("Confirmar Jornada"),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text("KM Percorrido detectado:"),
+          Text("${widget.suggestedKm.toStringAsFixed(2)} km",
+              style: const TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Text('Modelos:',
+                  style: TextStyle(
+                      fontSize: 12, color: Colors.grey.shade600)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TemplateChipRow(
+                  formType: FormType.jornadaFinal,
+                  templateService: _templateService,
+                  onTemplateSelected: _applyTemplate,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _kmController,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+                labelText: "KM Final (Edite se necessário)"),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, 0.0),
+          child: const Text("Cancelar"),
+        ),
+        IconButton(
+          icon: const Icon(Icons.bookmark_add_outlined),
+          color: _kAccent,
+          tooltip: 'Salvar como modelo',
+          onPressed: _saveAsTemplate,
+        ),
+        ElevatedButton(
+          onPressed: () {
+            final double? finalKm = double.tryParse(_kmController.text);
+            Navigator.pop(context, finalKm ?? 0.0);
+          },
+          style:
+              ElevatedButton.styleFrom(backgroundColor: _kAccent),
+          child: const Text("Salvar", style: TextStyle(color: Colors.white)),
+        ),
+      ],
     );
   }
 }

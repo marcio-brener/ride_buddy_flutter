@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ride_buddy_flutter/models/user_profile.dart';
+import 'package:ride_buddy_flutter/services/notification_service.dart';
 import 'package:ride_buddy_flutter/services/user_service.dart';
 import 'package:ride_buddy_flutter/widgets/header.dart';
 
@@ -25,12 +26,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _precoGasolinaController = TextEditingController();
   final _trocaOleoAlvoController = TextEditingController();
   final _trocaPneuAlvoController = TextEditingController();
-  UserProfile? _originalProfile; 
+  UserProfile? _originalProfile;
+  bool _reminderEnabled = false;
+  TimeOfDay _reminderTime = const TimeOfDay(hour: 20, minute: 0);
+  final NotificationService _notificationService = NotificationService();
 
   @override
   void initState() {
     super.initState();
     _loadData();
+    _loadNotificationSettings();
   }
   
   @override
@@ -45,6 +50,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _trocaOleoAlvoController.dispose();
     _trocaPneuAlvoController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadNotificationSettings() async {
+    final enabled = await _notificationService.isReminderEnabled();
+    final time = await _notificationService.getReminderTime();
+    if (mounted) {
+      setState(() {
+        _reminderEnabled = enabled;
+        _reminderTime = time;
+      });
+    }
+  }
+
+  Future<void> _onReminderToggle(bool value) async {
+    if (value) {
+      final granted = await _notificationService.requestPermissions();
+      if (!granted) return;
+      await _notificationService.scheduleEndOfDayReminder(
+        hour: _reminderTime.hour,
+        minute: _reminderTime.minute,
+      );
+    } else {
+      await _notificationService.cancelEndOfDayReminder();
+    }
+    if (mounted) setState(() => _reminderEnabled = value);
+  }
+
+  Future<void> _pickReminderTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _reminderTime,
+    );
+    if (picked != null && mounted) {
+      setState(() => _reminderTime = picked);
+      await _notificationService.scheduleEndOfDayReminder(
+        hour: picked.hour,
+        minute: picked.minute,
+      );
+    }
   }
 
   Future<void> _loadData() async {
@@ -195,6 +239,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         label: "KM Alvo Próxima Troca de Pneu",
                         isNumber: true),
 
+                    const SizedBox(height: 25),
+                    const Text(
+                      'Notificações',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 10),
+                    _buildNotificationSection(),
                     const SizedBox(height: 30),
                     SizedBox(
                       width: double.infinity,
@@ -215,6 +266,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
             ),
+    );
+  }
+
+  Widget _buildNotificationSection() {
+    final String timeLabel =
+        '${_reminderTime.hour.toString().padLeft(2, '0')}:${_reminderTime.minute.toString().padLeft(2, '0')}';
+
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.grey.shade50,
+      ),
+      child: Column(
+        children: [
+          SwitchListTile(
+            title: const Text('Lembrete no fim do dia'),
+            subtitle: const Text('Aviso diário para registrar sua jornada'),
+            value: _reminderEnabled,
+            activeColor: const Color.fromARGB(255, 248, 151, 33),
+            onChanged: _onReminderToggle,
+          ),
+          if (_reminderEnabled) ...[
+            const Divider(height: 1),
+            ListTile(
+              title: const Text('Horário do lembrete'),
+              trailing: TextButton(
+                onPressed: _pickReminderTime,
+                child: Text(
+                  timeLabel,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color.fromARGB(255, 248, 151, 33),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 

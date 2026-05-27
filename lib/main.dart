@@ -6,6 +6,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:ride_buddy_flutter/screens/login_screen.dart';
 import 'package:ride_buddy_flutter/screens/home_screen.dart';
 import 'package:ride_buddy_flutter/screens/onboarding_screen.dart';
+import 'package:ride_buddy_flutter/services/notification_service.dart';
 import 'package:ride_buddy_flutter/services/user_service.dart';
 import 'package:ride_buddy_flutter/models/user_profile.dart';
 
@@ -15,6 +16,7 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   await initializeDateFormatting('pt_BR', null);
+  await NotificationService.initialize();
   runApp(const MyApp());
 }
 

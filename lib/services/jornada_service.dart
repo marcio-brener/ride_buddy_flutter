@@ -292,16 +292,15 @@ class JornadaService {
   static void _showStatusNotification(
       String status, FlutterLocalNotificationsPlugin plugin) {
     plugin.show(
-      // Usar um ID diferente do foreground service ID
-      id: 1, 
+      id: 1,
       title: "Status da Jornada",
       body: "Rastreamento $status!",
       notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
-          statusNotificationChannelId, 
+          statusNotificationChannelId,
           'Notificações de Status da Jornada',
           icon: 'ic_bg_service_small',
-          importance: Importance.max, // Importância alta para notificação física
+          importance: Importance.max,
           priority: Priority.high,
           ticker: 'ticker',
         ),

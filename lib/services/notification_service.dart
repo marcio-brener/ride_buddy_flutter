@@ -1,9 +1,12 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import 'notification_web_stub.dart'
+    if (dart.library.html) 'notification_web_impl.dart' as webNotif;
 
 const String _channelId = 'end_of_day_reminder';
 const int _notificationId = 100;
@@ -20,45 +23,52 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   static Future<void> initialize() async {
-    tz.initializeTimeZones();
-    try {
-      final String timeZoneName = await FlutterTimezone.getLocalTimezone();
-      tz.setLocalLocation(tz.getLocation(timeZoneName));
-    } catch (_) {
-      tz.setLocalLocation(tz.UTC);
+    if (!kIsWeb) {
+      tz.initializeTimeZones();
+      try {
+        final String timeZoneName = await FlutterTimezone.getLocalTimezone();
+        tz.setLocalLocation(tz.getLocation(timeZoneName));
+      } catch (_) {
+        tz.setLocalLocation(tz.UTC);
+      }
+
+      const AndroidInitializationSettings androidSettings =
+          AndroidInitializationSettings('ic_bg_service_small');
+      const DarwinInitializationSettings iosSettings =
+          DarwinInitializationSettings(
+        requestAlertPermission: false,
+        requestBadgePermission: false,
+        requestSoundPermission: false,
+      );
+
+      await FlutterLocalNotificationsPlugin().initialize(
+        const InitializationSettings(
+            android: androidSettings, iOS: iosSettings),
+      );
+
+      await FlutterLocalNotificationsPlugin()
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(
+            const AndroidNotificationChannel(
+              _channelId,
+              'Lembrete do Fim do Dia',
+              description:
+                  'Lembrete diário para registrar sua jornada de trabalho.',
+              importance: Importance.high,
+            ),
+          );
     }
 
-    const AndroidInitializationSettings androidSettings =
-        AndroidInitializationSettings('ic_bg_service_small');
-    const DarwinInitializationSettings iosSettings =
-        DarwinInitializationSettings(
-      requestAlertPermission: false,
-      requestBadgePermission: false,
-      requestSoundPermission: false,
-    );
-
-    await FlutterLocalNotificationsPlugin().initialize(
-      const InitializationSettings(
-          android: androidSettings, iOS: iosSettings),
-    );
-
-    await FlutterLocalNotificationsPlugin()
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(
-          const AndroidNotificationChannel(
-            _channelId,
-            'Lembrete do Fim do Dia',
-            description:
-                'Lembrete diário para registrar sua jornada de trabalho.',
-            importance: Importance.high,
-          ),
-        );
-
+    // Re-schedule on every app/page load in case the OS cleared the alarm
+    // (e.g. after device reboot) or the browser tab was refreshed.
     await NotificationService()._rescheduleIfNeeded();
   }
 
   Future<bool> requestPermissions() async {
+    if (kIsWeb) {
+      return webNotif.requestWebPermission();
+    }
     final bool? androidGranted = await _plugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
@@ -78,6 +88,11 @@ class NotificationService {
     await prefs.setBool(_prefEnabled, true);
     await prefs.setInt(_prefHour, hour);
     await prefs.setInt(_prefMinute, minute);
+
+    if (kIsWeb) {
+      await webNotif.scheduleWebReminder(hour: hour, minute: minute);
+      return;
+    }
 
     await _plugin.zonedSchedule(
       _notificationId,
@@ -108,6 +123,10 @@ class NotificationService {
   Future<void> cancelEndOfDayReminder() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_prefEnabled, false);
+    if (kIsWeb) {
+      await webNotif.cancelWebReminder();
+      return;
+    }
     await _plugin.cancel(_notificationId);
   }
 

@@ -80,7 +80,6 @@ class NotificationService {
     await prefs.setInt(_prefMinute, minute);
 
     await _plugin.zonedSchedule(
-      
       _notificationId,
       'Ride Buddy — Fim do Dia',
       'Você registrou todas as suas jornadas de hoje?',
@@ -99,6 +98,8 @@ class NotificationService {
           presentSound: true,
         ),
       ),
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.time,
     );

@@ -304,6 +304,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
             ),
+            const Divider(height: 1),
+            ListTile(
+              title: const Text('Testar notificação'),
+              subtitle: const Text('Dispara o lembrete agora'),
+              trailing: const Icon(Icons.notifications_active_outlined,
+                  color: Color.fromARGB(255, 248, 151, 33)),
+              onTap: () async {
+                await _notificationService.showTestNotification();
+              },
+            ),
           ],
         ],
       ),

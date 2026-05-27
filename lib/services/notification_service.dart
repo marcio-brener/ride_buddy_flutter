@@ -130,6 +130,32 @@ class NotificationService {
     await _plugin.cancel(_notificationId);
   }
 
+  Future<void> showTestNotification() async {
+    if (kIsWeb) {
+      await webNotif.showWebTestNotification();
+      return;
+    }
+    await _plugin.show(
+      _notificationId + 1,
+      'Ride Buddy — Fim do Dia',
+      'Você registrou todas as suas jornadas de hoje?',
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          _channelId,
+          'Lembrete do Fim do Dia',
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: 'ic_bg_service_small',
+        ),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      ),
+    );
+  }
+
   Future<bool> isReminderEnabled() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(_prefEnabled) ?? false;

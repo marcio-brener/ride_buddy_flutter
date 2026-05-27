@@ -9,3 +9,5 @@ Future<void> scheduleWebReminder({
 }) async {}
 
 Future<void> cancelWebReminder() async {}
+
+Future<void> showWebTestNotification() async {}

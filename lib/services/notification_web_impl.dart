@@ -40,6 +40,10 @@ Future<void> cancelWebReminder() async {
   _webReminderTimer = null;
 }
 
+Future<void> showWebTestNotification() async {
+  _showWebNotification();
+}
+
 void _showWebNotification() {
   if (html.Notification.permission == 'granted') {
     html.Notification(
